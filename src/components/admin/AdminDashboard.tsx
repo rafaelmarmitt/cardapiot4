@@ -129,6 +129,7 @@ export default function AdminDashboard() {
               <card.icon className={`h-4 w-4 ${card.color}`} />
             </div>
             <p className="font-display text-2xl font-bold">{card.value}</p>
+            {card.onClick && <p className="text-[10px] text-muted-foreground mt-0.5">Toque para alternar</p>}
           </div>
         ))}
       </div>

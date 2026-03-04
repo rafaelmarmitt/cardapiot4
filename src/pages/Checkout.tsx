@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import AppHeader from "@/components/AppHeader";
 import { toast } from "sonner";
 
-const PIX_KEY = "terceiraobar@email.com";
+const PIX_KEY = "03450557050";
 
 export default function Checkout() {
   const { items, total, clearCart } = useCart();

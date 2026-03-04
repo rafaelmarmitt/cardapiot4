@@ -74,8 +74,8 @@ export default function AdminOrders() {
   }
 
   async function deliverOrder(id: string) {
-    const { error } = await supabase.from("orders").update({ status: "delivered" }).eq("id", id);
-    if (error) { toast.error("Erro ao marcar como entregue"); return; }
+    const { error } = await supabase.rpc("mark_order_delivered" as any, { _order_id: id } as any);
+    if (error) { toast.error(`Erro ao marcar como entregue: ${error.message}`); return; }
     toast.success("Pedido marcado como entregue");
     fetchOrders();
   }

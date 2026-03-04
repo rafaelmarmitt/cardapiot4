@@ -13,6 +13,7 @@ interface Product {
   title: string;
   description: string | null;
   price: number;
+  cost_price: number;
   image_url: string | null;
 }
 
@@ -24,6 +25,7 @@ export default function AdminProducts() {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [price, setPrice] = useState("");
+  const [costPrice, setCostPrice] = useState("");
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -38,12 +40,12 @@ export default function AdminProducts() {
   useEffect(() => { fetchProducts(); }, []);
 
   function openCreate() {
-    setEditing(null); setTitle(""); setDescription(""); setPrice(""); setImageFile(null); setImagePreview(null);
+    setEditing(null); setTitle(""); setDescription(""); setPrice(""); setCostPrice(""); setImageFile(null); setImagePreview(null);
     setDialogOpen(true);
   }
 
   function openEdit(p: Product) {
-    setEditing(p); setTitle(p.title); setDescription(p.description || ""); setPrice(p.price.toString());
+    setEditing(p); setTitle(p.title); setDescription(p.description || ""); setPrice(p.price.toString()); setCostPrice(p.cost_price?.toString() || "0");
     setImageFile(null); setImagePreview(p.image_url);
     setDialogOpen(true);
   }
@@ -67,11 +69,11 @@ export default function AdminProducts() {
         image_url = urlData.publicUrl;
       }
       if (editing) {
-        const { error } = await supabase.from("products").update({ title, description, price: parseFloat(price), image_url }).eq("id", editing.id);
+        const { error } = await supabase.from("products").update({ title, description, price: parseFloat(price), cost_price: parseFloat(costPrice || "0"), image_url } as any).eq("id", editing.id);
         if (error) throw error;
         toast.success("Produto atualizado");
       } else {
-        const { error } = await supabase.from("products").insert({ title, description, price: parseFloat(price), image_url });
+        const { error } = await supabase.from("products").insert({ title, description, price: parseFloat(price), cost_price: parseFloat(costPrice || "0"), image_url } as any);
         if (error) throw error;
         toast.success("Produto adicionado");
       }

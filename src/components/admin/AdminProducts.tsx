@@ -13,6 +13,7 @@ interface Product {
   title: string;
   description: string | null;
   price: number;
+  cost_price: number;
   image_url: string | null;
 }
 
@@ -24,6 +25,7 @@ export default function AdminProducts() {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [price, setPrice] = useState("");
+  const [costPrice, setCostPrice] = useState("");
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -38,12 +40,12 @@ export default function AdminProducts() {
   useEffect(() => { fetchProducts(); }, []);
 
   function openCreate() {
-    setEditing(null); setTitle(""); setDescription(""); setPrice(""); setImageFile(null); setImagePreview(null);
+    setEditing(null); setTitle(""); setDescription(""); setPrice(""); setCostPrice(""); setImageFile(null); setImagePreview(null);
     setDialogOpen(true);
   }
 
   function openEdit(p: Product) {
-    setEditing(p); setTitle(p.title); setDescription(p.description || ""); setPrice(p.price.toString());
+    setEditing(p); setTitle(p.title); setDescription(p.description || ""); setPrice(p.price.toString()); setCostPrice(p.cost_price?.toString() || "0");
     setImageFile(null); setImagePreview(p.image_url);
     setDialogOpen(true);
   }
@@ -67,11 +69,11 @@ export default function AdminProducts() {
         image_url = urlData.publicUrl;
       }
       if (editing) {
-        const { error } = await supabase.from("products").update({ title, description, price: parseFloat(price), image_url }).eq("id", editing.id);
+        const { error } = await supabase.from("products").update({ title, description, price: parseFloat(price), cost_price: parseFloat(costPrice || "0"), image_url } as any).eq("id", editing.id);
         if (error) throw error;
         toast.success("Produto atualizado");
       } else {
-        const { error } = await supabase.from("products").insert({ title, description, price: parseFloat(price), image_url });
+        const { error } = await supabase.from("products").insert({ title, description, price: parseFloat(price), cost_price: parseFloat(costPrice || "0"), image_url } as any);
         if (error) throw error;
         toast.success("Produto adicionado");
       }
@@ -117,9 +119,15 @@ export default function AdminProducts() {
                 <Label className="text-xs font-medium">Descrição</Label>
                 <Textarea value={description} onChange={e => setDescription(e.target.value)} placeholder="Descrição curta" rows={2} className="mt-1" />
               </div>
-              <div>
-                <Label className="text-xs font-medium">Preço (R$)</Label>
-                <Input type="number" step="0.01" value={price} onChange={e => setPrice(e.target.value)} placeholder="5.00" className="mt-1" />
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label className="text-xs font-medium">Preço venda (R$)</Label>
+                  <Input type="number" step="0.01" value={price} onChange={e => setPrice(e.target.value)} placeholder="10.00" className="mt-1" />
+                </div>
+                <div>
+                  <Label className="text-xs font-medium">Custo (R$)</Label>
+                  <Input type="number" step="0.01" value={costPrice} onChange={e => setCostPrice(e.target.value)} placeholder="5.00" className="mt-1" />
+                </div>
               </div>
               <div>
                 <Label className="text-xs font-medium">Imagem</Label>
@@ -160,7 +168,7 @@ export default function AdminProducts() {
             </div>
             <div className="flex-1 min-w-0">
               <p className="font-display font-semibold text-sm truncate">{p.title}</p>
-              <p className="text-muted-foreground text-xs">R${p.price.toFixed(2).replace('.', ',')}</p>
+              <p className="text-muted-foreground text-xs">R${p.price.toFixed(2).replace('.', ',')} · Custo R${(p.cost_price ?? 0).toFixed(2).replace('.', ',')}</p>
             </div>
             <div className="flex gap-1">
               <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground" onClick={() => openEdit(p)}>

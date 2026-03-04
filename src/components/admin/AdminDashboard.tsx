@@ -1,12 +1,13 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { DollarSign, ShoppingBag, Clock, CheckCircle, TrendingUp } from "lucide-react";
+import { DollarSign, ShoppingBag, Clock, CheckCircle, TrendingUp, PackageCheck } from "lucide-react";
 
 interface Stats {
   totalOrders: number;
   totalRevenue: number;
   pendingOrders: number;
   approvedOrders: number;
+  deliveredOrders: number;
   totalProducts: number;
   recentOrders: {
     id: string;
@@ -41,13 +42,15 @@ export default function AdminDashboard() {
 
       const pendingOrders = orders.filter(o => o.status === "pending").length;
       const approvedOrders = orders.filter(o => o.status === "approved").length;
-      const totalRevenue = orders.filter(o => o.status === "approved").reduce((sum, o) => sum + Number(o.total), 0);
+      const deliveredOrders = orders.filter(o => o.status === "delivered").length;
+      const totalRevenue = orders.filter(o => o.status === "approved" || o.status === "delivered").reduce((sum, o) => sum + Number(o.total), 0);
 
       setStats({
         totalOrders: orders.length,
         totalRevenue,
         pendingOrders,
         approvedOrders,
+        deliveredOrders,
         totalProducts: products.length,
         recentOrders: orders.slice(0, 5).map(o => ({
           id: o.id,
@@ -77,11 +80,14 @@ export default function AdminDashboard() {
 
   if (!stats) return null;
 
+  const completedOrders = stats.approvedOrders + stats.deliveredOrders;
+
   const cards = [
     { label: "Receita Total", value: `R$${stats.totalRevenue.toFixed(2).replace('.', ',')}`, icon: DollarSign, color: "text-success" },
     { label: "Total de Pedidos", value: stats.totalOrders.toString(), icon: ShoppingBag, color: "text-primary" },
     { label: "Pendentes", value: stats.pendingOrders.toString(), icon: Clock, color: "text-warning" },
     { label: "Aprovados", value: stats.approvedOrders.toString(), icon: CheckCircle, color: "text-success" },
+    { label: "Entregues", value: stats.deliveredOrders.toString(), icon: PackageCheck, color: "text-primary" },
   ];
 
   return (
@@ -117,16 +123,16 @@ export default function AdminDashboard() {
           <div className="flex-1">
             <p className="text-xs text-muted-foreground">Ticket médio</p>
             <p className="font-display font-bold text-lg">
-              {stats.totalOrders > 0
-                ? `R$${(stats.totalRevenue / stats.totalOrders).toFixed(2).replace('.', ',')}`
+              {completedOrders > 0
+                ? `R$${(stats.totalRevenue / completedOrders).toFixed(2).replace('.', ',')}`
                 : "R$0,00"}
             </p>
           </div>
           <div className="flex-1">
-            <p className="text-xs text-muted-foreground">Taxa aprovação</p>
+            <p className="text-xs text-muted-foreground">Taxa conclusão</p>
             <p className="font-display font-bold text-lg">
               {stats.totalOrders > 0
-                ? `${Math.round((stats.approvedOrders / stats.totalOrders) * 100)}%`
+                ? `${Math.round((completedOrders / stats.totalOrders) * 100)}%`
                 : "0%"}
             </p>
           </div>
@@ -137,13 +143,13 @@ export default function AdminDashboard() {
       {stats.totalOrders > 0 && (
         <div className="bg-card rounded-xl p-4 border border-border animate-fade-up" style={{ animationDelay: "300ms" }}>
           <div className="flex items-center justify-between mb-2">
-            <span className="text-xs text-muted-foreground font-medium">Progresso de aprovações</span>
-            <span className="text-xs font-semibold">{stats.approvedOrders}/{stats.totalOrders}</span>
+            <span className="text-xs text-muted-foreground font-medium">Progresso de conclusão</span>
+            <span className="text-xs font-semibold">{completedOrders}/{stats.totalOrders}</span>
           </div>
           <div className="w-full h-2 bg-secondary rounded-full overflow-hidden">
             <div
               className="h-full bg-primary rounded-full transition-all duration-700"
-              style={{ width: `${(stats.approvedOrders / stats.totalOrders) * 100}%` }}
+              style={{ width: `${(completedOrders / stats.totalOrders) * 100}%` }}
             />
           </div>
         </div>
@@ -173,7 +179,9 @@ export default function AdminDashboard() {
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="font-display font-bold text-sm">R${order.total.toFixed(2).replace('.', ',')}</span>
-                  {order.status === "approved" ? (
+                  {order.status === "delivered" ? (
+                    <span className="badge-approved"><PackageCheck className="h-3 w-3" /></span>
+                  ) : order.status === "approved" ? (
                     <span className="badge-approved"><CheckCircle className="h-3 w-3" /></span>
                   ) : (
                     <span className="badge-pending"><Clock className="h-3 w-3" /></span>

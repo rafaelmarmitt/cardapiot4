@@ -1,5 +1,7 @@
 import { Plus } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { useCart } from "@/contexts/CartContext";
+import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 
@@ -13,8 +15,15 @@ interface Props {
 
 export default function ProductCard({ id, title, description, price, image_url }: Props) {
   const { addItem } = useCart();
+  const { user } = useAuth();
+  const navigate = useNavigate();
 
   function handleAdd() {
+    if (!user) {
+      toast.error("Faça login para adicionar itens ao carrinho");
+      navigate("/login");
+      return;
+    }
     addItem({ id, title, price, image_url });
     toast.success(`${title} adicionado ao carrinho`);
   }

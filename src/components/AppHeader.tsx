@@ -1,6 +1,7 @@
 import { Link, useNavigate } from "react-router-dom";
 import { ShoppingCart, User, LogOut, Shield } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import logoT4 from "@/assets/logo-t4.jpg";
 import { useCart } from "@/contexts/CartContext";
 import { Button } from "@/components/ui/button";
 import { useEffect, useState } from "react";
@@ -39,8 +40,8 @@ export default function AppHeader() {
     <header className="sticky top-0 z-50 bg-card/80 backdrop-blur-xl border-b border-border">
       <div className="container flex items-center justify-between h-14 px-4">
         <Link to="/" className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg bg-accent flex items-center justify-center">
-            <span className="font-display text-sm font-bold text-accent-foreground">CD</span>
+          <div className="w-8 h-8 rounded-lg overflow-hidden">
+            <img src={logoT4} alt="Logo T4" className="w-full h-full object-cover" />
           </div>
           <span className="font-display text-lg font-bold tracking-tight text-foreground">Cardápio</span>
         </Link>

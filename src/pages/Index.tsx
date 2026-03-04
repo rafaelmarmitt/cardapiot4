@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import ProductCard from "@/components/ProductCard";
 import AppHeader from "@/components/AppHeader";
 import heroBg from "@/assets/hero-bg.jpg";
+import logoT4 from "@/assets/logo-t4.jpg";
 
 interface Product {
   id: string;
@@ -34,8 +35,8 @@ export default function Index() {
         <div className="absolute bottom-0 left-0 right-0 px-4 pb-4">
           <div className="container">
             <div className="flex items-end gap-3">
-               <div className="w-12 h-12 rounded-xl bg-accent flex items-center justify-center shadow-lg">
-                <span className="font-display text-xl font-bold text-accent-foreground">CD</span>
+               <div className="w-12 h-12 rounded-xl overflow-hidden shadow-lg">
+                <img src={logoT4} alt="Logo T4" className="w-full h-full object-cover" />
               </div>
               <div>
                 <h1 className="font-display text-2xl font-bold text-foreground leading-none">Cardápio Digital</h1>

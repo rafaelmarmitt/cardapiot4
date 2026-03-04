@@ -34,46 +34,50 @@ export default function MeusPedidos() {
   return (
     <div className="min-h-screen bg-background">
       <AppHeader />
-      <main className="container px-4 py-6 max-w-lg mx-auto">
-        <h1 className="font-display text-2xl font-bold mb-4">Meus Pedidos</h1>
+      <main className="container px-4 py-5 max-w-lg mx-auto">
+        <h1 className="font-display text-xl font-bold mb-5">Meus Pedidos</h1>
+
         {loading ? (
           <div className="space-y-3">
-            {[1, 2].map(i => <div key={i} className="h-32 bg-muted rounded-lg animate-pulse" />)}
+            {[1, 2].map(i => <div key={i} className="h-32 bg-card rounded-xl animate-pulse border border-border" />)}
           </div>
         ) : orders.length === 0 ? (
-          <div className="text-center py-16">
-            <p className="text-4xl mb-3">📋</p>
-            <p className="text-muted-foreground font-display">Nenhum pedido ainda</p>
+          <div className="text-center py-20 animate-fade-up">
+            <div className="w-16 h-16 rounded-2xl bg-secondary flex items-center justify-center mx-auto mb-4">
+              <Ticket className="h-7 w-7 text-muted-foreground" />
+            </div>
+            <p className="font-display font-medium text-foreground">Sem pedidos</p>
+            <p className="text-sm text-muted-foreground mt-1">Seus pedidos aparecerão aqui</p>
           </div>
         ) : (
           <div className="space-y-3">
-            {orders.map(order => (
-              <div key={order.id} className="bg-card rounded-xl p-4 shadow-sm border border-border animate-fade-in">
+            {orders.map((order, i) => (
+              <div key={order.id} className="bg-card rounded-xl p-4 border border-border animate-fade-up" style={{ animationDelay: `${i * 60}ms` }}>
                 <div className="flex items-center justify-between mb-2">
-                  <span className="font-display font-bold text-sm">Pedido #{order.order_number}</span>
+                  <span className="font-display font-bold text-sm">#{order.order_number}</span>
                   {order.status === "approved" ? (
                     <span className="badge-approved"><CheckCircle className="h-3 w-3 mr-1" />Aprovado</span>
                   ) : (
                     <span className="badge-pending"><Clock className="h-3 w-3 mr-1" />Pendente</span>
                   )}
                 </div>
-                <div className="text-xs text-muted-foreground mb-2">
+                <p className="text-xs text-muted-foreground mb-2">
                   {new Date(order.created_at).toLocaleDateString("pt-BR", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}
-                </div>
-                <div className="space-y-1 mb-2">
+                </p>
+                <div className="space-y-1 mb-3">
                   {(order.items as any[]).map((item: any, idx: number) => (
                     <div key={idx} className="flex justify-between text-sm">
-                      <span>{item.quantity}x {item.title}</span>
+                      <span className="text-muted-foreground">{item.quantity}x {item.title}</span>
                       <span className="text-muted-foreground">R${(item.price * item.quantity).toFixed(2).replace('.', ',')}</span>
                     </div>
                   ))}
                 </div>
-                <div className="flex justify-between items-center pt-2 border-t border-border">
-                  <span className="font-display font-bold">Total: R${Number(order.total).toFixed(2).replace('.', ',')}</span>
+                <div className="flex justify-between items-center pt-3 border-t border-border">
+                  <span className="font-display font-bold text-sm">R${Number(order.total).toFixed(2).replace('.', ',')}</span>
                   {order.status === "approved" && (
-                    <div className="flex items-center gap-1 bg-success/10 text-success px-3 py-1.5 rounded-lg">
-                      <Ticket className="h-4 w-4" />
-                      <span className="text-xs font-bold">TICKET #{order.order_number}</span>
+                    <div className="flex items-center gap-1.5 bg-success/10 text-success px-3 py-1.5 rounded-lg">
+                      <Ticket className="h-3.5 w-3.5" />
+                      <span className="text-xs font-bold tracking-wide">TICKET #{order.order_number}</span>
                     </div>
                   )}
                 </div>

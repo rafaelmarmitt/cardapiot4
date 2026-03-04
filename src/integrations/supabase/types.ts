@@ -123,6 +123,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      mark_order_delivered: { Args: { _order_id: string }; Returns: undefined }
     }
     Enums: {
       app_role: "admin" | "user"

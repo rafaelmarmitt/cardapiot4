@@ -82,6 +82,12 @@ export default function Checkout() {
                   Coloque o número <span className="font-bold text-foreground">{orderNumber}</span> na descrição do PIX para identificarmos seu pagamento.
                 </p>
               </div>
+              <div className="p-3 bg-primary/8 rounded-lg border border-primary/15">
+                <p className="text-xs font-semibold text-foreground">⏳ Aprovação</p>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Seu pagamento será aprovado em algumas horas. Após a confirmação, é só ir ao bar com o número do pedido <span className="font-bold text-foreground">#{orderNumber}</span> para retirar.
+                </p>
+              </div>
             </div>
 
             <div className="flex gap-2 mt-5">

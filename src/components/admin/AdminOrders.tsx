@@ -51,42 +51,74 @@ export default function AdminOrders() {
   if (loading) return <div className="py-8 text-center text-muted-foreground text-sm">Carregando pedidos...</div>;
 
   return (
-    <div className="space-y-2 mt-4">
+    <div className="space-y-5 mt-4">
       {orders.length === 0 ? (
         <p className="text-center py-12 text-muted-foreground text-sm">Nenhum pedido ainda</p>
-      ) : orders.map((order, i) => (
-        <div key={order.id} className="bg-card rounded-xl p-4 border border-border animate-fade-up" style={{ animationDelay: `${i * 40}ms` }}>
-          <div className="flex items-center justify-between mb-1.5">
-            <div className="flex items-center gap-2">
-              <span className="font-display font-bold text-sm">#{order.order_number}</span>
-              <span className="text-xs text-muted-foreground">
-                {(order as any).profiles?.name}
-              </span>
+      ) : (
+        <>
+          {/* Pendentes */}
+          {orders.filter(o => o.status === "pending").length > 0 && (
+            <div>
+              <h3 className="font-display font-semibold text-sm mb-2 flex items-center gap-1.5">
+                <Clock className="h-4 w-4 text-warning" /> Pendentes
+              </h3>
+              <div className="space-y-2">
+                {orders.filter(o => o.status === "pending").map((order, i) => (
+                  <OrderCard key={order.id} order={order} index={i} onApprove={approveOrder} />
+                ))}
+              </div>
             </div>
-            {order.status === "approved" ? (
-              <span className="badge-approved"><CheckCircle className="h-3 w-3 mr-1" />Aprovado</span>
-            ) : (
-              <span className="badge-pending"><Clock className="h-3 w-3 mr-1" />Pendente</span>
-            )}
-          </div>
-          <p className="text-xs text-muted-foreground mb-2">
-            {new Date(order.created_at).toLocaleDateString("pt-BR", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}
-          </p>
-          <div className="space-y-0.5 mb-2">
-            {(order.items as any[]).map((item: any, idx: number) => (
-              <p key={idx} className="text-sm text-muted-foreground">{item.quantity}x {item.title}</p>
-            ))}
-          </div>
-          <div className="flex items-center justify-between pt-2.5 border-t border-border">
-            <span className="font-display font-bold text-sm">R${Number(order.total).toFixed(2).replace('.', ',')}</span>
-            {order.status === "pending" && (
-              <Button variant="accent" size="sm" className="h-8 text-xs" onClick={() => approveOrder(order.id)}>
-                Aprovar Pagamento
-              </Button>
-            )}
-          </div>
+          )}
+
+          {/* Aprovados */}
+          {orders.filter(o => o.status === "approved").length > 0 && (
+            <div>
+              <h3 className="font-display font-semibold text-sm mb-2 flex items-center gap-1.5">
+                <CheckCircle className="h-4 w-4 text-success" /> Aprovados
+              </h3>
+              <div className="space-y-2">
+                {orders.filter(o => o.status === "approved").map((order, i) => (
+                  <OrderCard key={order.id} order={order} index={i} />
+                ))}
+              </div>
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
+
+function OrderCard({ order, index, onApprove }: { order: Order; index: number; onApprove?: (id: string) => void }) {
+  return (
+    <div className="bg-card rounded-xl p-4 border border-border animate-fade-up" style={{ animationDelay: `${index * 40}ms` }}>
+      <div className="flex items-center justify-between mb-1.5">
+        <div className="flex items-center gap-2">
+          <span className="font-display font-bold text-sm">#{order.order_number}</span>
+          <span className="text-xs text-muted-foreground">{order.profiles?.name}</span>
         </div>
-      ))}
+        {order.status === "approved" ? (
+          <span className="badge-approved"><CheckCircle className="h-3 w-3 mr-1" />Aprovado</span>
+        ) : (
+          <span className="badge-pending"><Clock className="h-3 w-3 mr-1" />Pendente</span>
+        )}
+      </div>
+      <p className="text-xs text-muted-foreground mb-2">
+        {new Date(order.created_at).toLocaleDateString("pt-BR", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}
+      </p>
+      <div className="space-y-0.5 mb-2">
+        {(order.items as any[]).map((item: any, idx: number) => (
+          <p key={idx} className="text-sm text-muted-foreground">{item.quantity}x {item.title}</p>
+        ))}
+      </div>
+      <div className="flex items-center justify-between pt-2.5 border-t border-border">
+        <span className="font-display font-bold text-sm">R${Number(order.total).toFixed(2).replace('.', ',')}</span>
+        {order.status === "pending" && onApprove && (
+          <Button variant="accent" size="sm" className="h-8 text-xs" onClick={() => onApprove(order.id)}>
+            Aprovar Pagamento
+          </Button>
+        )}
+      </div>
     </div>
   );
 }

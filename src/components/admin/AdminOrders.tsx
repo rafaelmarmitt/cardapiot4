@@ -27,7 +27,6 @@ export default function AdminOrders() {
     
     if (!ordersData) { setOrders([]); setLoading(false); return; }
     
-    // Fetch profile names for each unique user
     const userIds = [...new Set(ordersData.map(o => o.user_id))];
     const { data: profilesData } = await supabase
       .from("profiles")
@@ -44,27 +43,24 @@ export default function AdminOrders() {
 
   async function approveOrder(id: string) {
     const { error } = await supabase.from("orders").update({ status: "approved" }).eq("id", id);
-    if (error) {
-      toast.error("Erro ao aprovar");
-      return;
-    }
-    toast.success("Pedido aprovado!");
+    if (error) { toast.error("Erro ao aprovar"); return; }
+    toast.success("Pagamento aprovado");
     fetchOrders();
   }
 
-  if (loading) return <div className="py-8 text-center text-muted-foreground">Carregando...</div>;
+  if (loading) return <div className="py-8 text-center text-muted-foreground text-sm">Carregando pedidos...</div>;
 
   return (
-    <div className="space-y-3 mt-4">
+    <div className="space-y-2 mt-4">
       {orders.length === 0 ? (
-        <p className="text-center py-8 text-muted-foreground">Nenhum pedido ainda</p>
-      ) : orders.map(order => (
-        <div key={order.id} className="bg-card rounded-xl p-4 shadow-sm border border-border">
-          <div className="flex items-center justify-between mb-2">
-            <div>
+        <p className="text-center py-12 text-muted-foreground text-sm">Nenhum pedido ainda</p>
+      ) : orders.map((order, i) => (
+        <div key={order.id} className="bg-card rounded-xl p-4 border border-border animate-fade-up" style={{ animationDelay: `${i * 40}ms` }}>
+          <div className="flex items-center justify-between mb-1.5">
+            <div className="flex items-center gap-2">
               <span className="font-display font-bold text-sm">#{order.order_number}</span>
-              <span className="text-xs text-muted-foreground ml-2">
-                {(order as any).profiles?.name || "Sem nome"}
+              <span className="text-xs text-muted-foreground">
+                {(order as any).profiles?.name}
               </span>
             </div>
             {order.status === "approved" ? (
@@ -73,18 +69,18 @@ export default function AdminOrders() {
               <span className="badge-pending"><Clock className="h-3 w-3 mr-1" />Pendente</span>
             )}
           </div>
-          <div className="text-xs text-muted-foreground mb-2">
+          <p className="text-xs text-muted-foreground mb-2">
             {new Date(order.created_at).toLocaleDateString("pt-BR", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}
-          </div>
-          <div className="space-y-1 mb-2">
+          </p>
+          <div className="space-y-0.5 mb-2">
             {(order.items as any[]).map((item: any, idx: number) => (
-              <div key={idx} className="text-sm">{item.quantity}x {item.title}</div>
+              <p key={idx} className="text-sm text-muted-foreground">{item.quantity}x {item.title}</p>
             ))}
           </div>
-          <div className="flex items-center justify-between pt-2 border-t border-border">
-            <span className="font-bold text-sm">R${Number(order.total).toFixed(2).replace('.', ',')}</span>
+          <div className="flex items-center justify-between pt-2.5 border-t border-border">
+            <span className="font-display font-bold text-sm">R${Number(order.total).toFixed(2).replace('.', ',')}</span>
             {order.status === "pending" && (
-              <Button size="sm" className="btn-accent" onClick={() => approveOrder(order.id)}>
+              <Button variant="accent" size="sm" className="h-8 text-xs" onClick={() => approveOrder(order.id)}>
                 Aprovar Pagamento
               </Button>
             )}

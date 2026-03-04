@@ -2,79 +2,79 @@
 @tailwind components;
 @tailwind utilities;
 
-@import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap');
 
 @layer base {
   :root {
-    --background: 40 33% 96%;
-    --foreground: 215 30% 18%;
+    --background: 0 0% 98%;
+    --foreground: 0 0% 8%;
 
     --card: 0 0% 100%;
-    --card-foreground: 215 30% 18%;
+    --card-foreground: 0 0% 8%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 215 30% 18%;
+    --popover-foreground: 0 0% 8%;
 
-    --primary: 214 45% 38%;
-    --primary-foreground: 0 0% 100%;
+    --primary: 0 0% 8%;
+    --primary-foreground: 0 0% 98%;
 
-    --secondary: 40 33% 90%;
-    --secondary-foreground: 215 30% 18%;
+    --secondary: 0 0% 94%;
+    --secondary-foreground: 0 0% 8%;
 
-    --muted: 40 20% 92%;
-    --muted-foreground: 215 15% 50%;
+    --muted: 0 0% 94%;
+    --muted-foreground: 0 0% 45%;
 
-    --accent: 30 70% 55%;
+    --accent: 24 95% 53%;
     --accent-foreground: 0 0% 100%;
 
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 214 25% 82%;
-    --input: 214 25% 85%;
-    --ring: 214 45% 38%;
+    --border: 0 0% 90%;
+    --input: 0 0% 90%;
+    --ring: 24 95% 53%;
 
     --radius: 0.75rem;
 
-    --sidebar-background: 214 45% 38%;
-    --sidebar-foreground: 0 0% 100%;
-    --sidebar-primary: 0 0% 100%;
-    --sidebar-primary-foreground: 214 45% 38%;
-    --sidebar-accent: 214 45% 32%;
-    --sidebar-accent-foreground: 0 0% 100%;
-    --sidebar-border: 214 45% 45%;
-    --sidebar-ring: 30 70% 55%;
-
-    --success: 142 60% 40%;
+    --success: 152 60% 42%;
     --success-foreground: 0 0% 100%;
 
     --warning: 38 92% 50%;
     --warning-foreground: 0 0% 100%;
 
-    --font-display: 'Fredoka', sans-serif;
+    --sidebar-background: 0 0% 8%;
+    --sidebar-foreground: 0 0% 98%;
+    --sidebar-primary: 0 0% 98%;
+    --sidebar-primary-foreground: 0 0% 8%;
+    --sidebar-accent: 0 0% 15%;
+    --sidebar-accent-foreground: 0 0% 98%;
+    --sidebar-border: 0 0% 18%;
+    --sidebar-ring: 24 95% 53%;
+
+    --font-display: 'Space Grotesk', sans-serif;
     --font-body: 'Inter', sans-serif;
   }
 
   .dark {
-    --background: 215 30% 12%;
-    --foreground: 40 33% 96%;
-    --card: 215 30% 16%;
-    --card-foreground: 40 33% 96%;
-    --popover: 215 30% 16%;
-    --popover-foreground: 40 33% 96%;
-    --primary: 214 55% 55%;
-    --primary-foreground: 0 0% 100%;
-    --secondary: 215 25% 22%;
-    --secondary-foreground: 40 33% 96%;
-    --muted: 215 25% 20%;
-    --muted-foreground: 215 15% 60%;
-    --accent: 30 70% 55%;
+    --background: 0 0% 6%;
+    --foreground: 0 0% 95%;
+    --card: 0 0% 10%;
+    --card-foreground: 0 0% 95%;
+    --popover: 0 0% 10%;
+    --popover-foreground: 0 0% 95%;
+    --primary: 0 0% 95%;
+    --primary-foreground: 0 0% 6%;
+    --secondary: 0 0% 15%;
+    --secondary-foreground: 0 0% 95%;
+    --muted: 0 0% 15%;
+    --muted-foreground: 0 0% 55%;
+    --accent: 24 95% 53%;
     --accent-foreground: 0 0% 100%;
     --destructive: 0 62% 30%;
     --destructive-foreground: 0 0% 100%;
-    --border: 215 25% 25%;
-    --input: 215 25% 25%;
-    --ring: 214 55% 55%;
+    --border: 0 0% 18%;
+    --input: 0 0% 18%;
+    --ring: 24 95% 53%;
   }
 }
 
@@ -86,38 +86,28 @@
   body {
     @apply bg-background text-foreground;
     font-family: var(--font-body);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 
   h1, h2, h3, h4, h5, h6 {
     font-family: var(--font-display);
+    letter-spacing: -0.02em;
   }
 }
 
 @layer components {
-  .btn-accent {
-    @apply bg-accent text-accent-foreground rounded-lg font-semibold shadow-md transition-all duration-200;
-  }
-  .btn-accent:hover {
-    filter: brightness(1.1);
-    transform: translateY(-1px);
-  }
-  .btn-accent:active {
-    transform: translateY(0);
-  }
-  .card-product {
-    @apply bg-card rounded-xl shadow-md overflow-hidden border border-border transition-all duration-200;
-  }
-  .card-product:hover {
-    @apply shadow-lg;
-    transform: translateY(-2px);
-  }
   .badge-status {
-    @apply inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold;
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium tracking-wide uppercase;
   }
   .badge-pending {
-    @apply badge-status bg-warning/20 text-warning;
+    @apply badge-status;
+    background: hsl(var(--warning) / 0.12);
+    color: hsl(var(--warning));
   }
   .badge-approved {
-    @apply badge-status bg-success/20 text-success;
+    @apply badge-status;
+    background: hsl(var(--success) / 0.12);
+    color: hsl(var(--success));
   }
 }

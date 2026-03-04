@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import ProductCard from "@/components/ProductCard";
 import AppHeader from "@/components/AppHeader";
+import heroBg from "@/assets/hero-bg.jpg";
 
 interface Product {
   id: string;
@@ -25,26 +26,52 @@ export default function Index() {
   return (
     <div className="min-h-screen bg-background">
       <AppHeader />
-      <main className="container px-4 py-6">
-        <div className="text-center mb-6">
-          <h1 className="font-display text-3xl font-bold text-foreground">Cardápio</h1>
-          <p className="text-muted-foreground text-sm mt-1">Bar do Terceirão 🎓</p>
+
+      {/* Hero */}
+      <div className="relative h-48 overflow-hidden">
+        <img src={heroBg} alt="" className="w-full h-full object-cover" />
+        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-transparent" />
+        <div className="absolute bottom-0 left-0 right-0 px-4 pb-4">
+          <div className="container">
+            <div className="flex items-end gap-3">
+              <div className="w-12 h-12 rounded-xl bg-accent flex items-center justify-center shadow-lg">
+                <span className="font-display text-xl font-bold text-accent-foreground">T4</span>
+              </div>
+              <div>
+                <h1 className="font-display text-2xl font-bold text-foreground leading-none">Terceirão T4</h1>
+                <p className="text-muted-foreground text-sm mt-0.5">Cardápio Digital</p>
+              </div>
+            </div>
+          </div>
         </div>
+      </div>
+
+      <main className="container px-4 py-5">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="font-display text-lg font-semibold text-foreground">Cardápio</h2>
+          <span className="text-xs text-muted-foreground">{products.length} itens</span>
+        </div>
+
         {loading ? (
           <div className="grid grid-cols-2 gap-3">
             {[1, 2, 3, 4].map(i => (
-              <div key={i} className="card-product h-56 animate-pulse bg-muted" />
+              <div key={i} className="bg-card rounded-xl h-56 animate-pulse border border-border" />
             ))}
           </div>
         ) : products.length === 0 ? (
-          <div className="text-center py-16">
-            <p className="text-4xl mb-3">🍔</p>
-            <p className="text-muted-foreground font-display">Nenhum produto disponível ainda.</p>
+          <div className="text-center py-20">
+            <div className="w-16 h-16 rounded-2xl bg-secondary flex items-center justify-center mx-auto mb-4">
+              <span className="font-display text-2xl font-bold text-muted-foreground">?</span>
+            </div>
+            <p className="text-muted-foreground font-display font-medium">Nenhum produto disponível</p>
+            <p className="text-muted-foreground/60 text-sm mt-1">Volte em breve!</p>
           </div>
         ) : (
           <div className="grid grid-cols-2 gap-3">
-            {products.map(p => (
-              <ProductCard key={p.id} {...p} />
+            {products.map((p, i) => (
+              <div key={p.id} style={{ animationDelay: `${i * 50}ms` }}>
+                <ProductCard {...p} />
+              </div>
             ))}
           </div>
         )}

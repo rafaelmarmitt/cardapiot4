@@ -16,27 +16,31 @@ export default function ProductCard({ id, title, description, price, image_url }
 
   function handleAdd() {
     addItem({ id, title, price, image_url });
-    toast.success(`${title} adicionado ao carrinho!`);
+    toast.success(`${title} adicionado ao carrinho`);
   }
 
   return (
-    <div className="card-product animate-fade-in">
-      <div className="aspect-square bg-muted overflow-hidden">
+    <div className="group bg-card rounded-xl border border-border overflow-hidden transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5 animate-fade-up">
+      <div className="aspect-square bg-secondary overflow-hidden">
         {image_url ? (
-          <img src={image_url} alt={title} className="w-full h-full object-cover" />
+          <img src={image_url} alt={title} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
         ) : (
-          <div className="w-full h-full flex items-center justify-center text-4xl">🍽️</div>
+          <div className="w-full h-full flex items-center justify-center">
+            <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center">
+              <span className="font-display text-lg font-bold text-muted-foreground">{title.charAt(0)}</span>
+            </div>
+          </div>
         )}
       </div>
       <div className="p-3">
-        <h3 className="font-display font-semibold text-base truncate">{title}</h3>
+        <h3 className="font-display font-semibold text-sm truncate">{title}</h3>
         {description && <p className="text-muted-foreground text-xs mt-0.5 line-clamp-2">{description}</p>}
-        <div className="flex items-center justify-between mt-2">
-          <span className="font-display font-bold text-lg text-accent">
+        <div className="flex items-center justify-between mt-2.5">
+          <span className="font-display font-bold text-base text-foreground">
             R${price.toFixed(2).replace('.', ',')}
           </span>
-          <Button size="sm" className="btn-accent h-8 px-3 text-xs" onClick={handleAdd}>
-            <Plus className="h-4 w-4 mr-1" /> Adicionar
+          <Button variant="accent" size="sm" className="h-8 px-3 text-xs rounded-lg" onClick={handleAdd}>
+            <Plus className="h-3.5 w-3.5 mr-1" /> Adicionar
           </Button>
         </div>
       </div>

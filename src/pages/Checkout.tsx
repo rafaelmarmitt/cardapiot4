@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Copy, CheckCircle } from "lucide-react";
+import { Copy, CheckCircle, ArrowLeft } from "lucide-react";
 import { useCart } from "@/contexts/CartContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -24,18 +24,16 @@ export default function Checkout() {
     try {
       const { data: numData } = await supabase.rpc("generate_order_number");
       const num = numData || Math.floor(Math.random() * 999999 + 1).toString().padStart(6, "0");
-
       const { error } = await supabase.from("orders").insert({
         user_id: user.id,
         order_number: num,
         total,
         items: items.map(i => ({ id: i.id, title: i.title, price: i.price, quantity: i.quantity })),
       });
-
       if (error) throw error;
       setOrderNumber(num);
       clearCart();
-      toast.success("Pedido criado com sucesso!");
+      toast.success("Pedido criado!");
     } catch (err: any) {
       toast.error(err.message || "Erro ao criar pedido");
     } finally {
@@ -54,34 +52,41 @@ export default function Checkout() {
     return (
       <div className="min-h-screen bg-background">
         <AppHeader />
-        <main className="container px-4 py-6 max-w-lg mx-auto text-center">
-          <div className="bg-card rounded-xl p-6 shadow-md border border-border animate-fade-in">
-            <CheckCircle className="h-16 w-16 text-success mx-auto mb-4" />
-            <h1 className="font-display text-2xl font-bold mb-2">Pedido Criado!</h1>
-            <div className="bg-primary/10 rounded-lg p-4 my-4">
-              <p className="text-sm text-muted-foreground">Número do Pedido</p>
-              <p className="font-display text-3xl font-bold text-primary">{orderNumber}</p>
+        <main className="container px-4 py-6 max-w-lg mx-auto">
+          <div className="bg-card rounded-2xl p-6 border border-border animate-scale-in text-center">
+            <div className="w-14 h-14 rounded-full bg-success/10 flex items-center justify-center mx-auto mb-4">
+              <CheckCircle className="h-7 w-7 text-success" />
             </div>
-            <div className="bg-muted rounded-lg p-4 my-4 text-left">
-              <p className="font-display font-semibold mb-2">Pagamento via PIX:</p>
-              <p className="text-sm text-muted-foreground mb-2">Copie a chave PIX abaixo e realize o pagamento:</p>
-              <div className="flex items-center gap-2 bg-card rounded-md p-2 border border-border">
-                <code className="flex-1 text-sm font-mono break-all">{PIX_KEY}</code>
-                <Button variant="outline" size="icon" className="h-8 w-8 flex-shrink-0" onClick={copyPix}>
+            <h1 className="font-display text-2xl font-bold">Pedido Criado</h1>
+
+            <div className="bg-secondary rounded-xl p-4 my-5">
+              <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium">Número do Pedido</p>
+              <p className="font-display text-4xl font-bold text-foreground mt-1 tracking-wider">{orderNumber}</p>
+            </div>
+
+            <div className="bg-secondary rounded-xl p-4 text-left space-y-3">
+              <p className="font-display font-semibold text-sm">Pagamento via PIX</p>
+              <p className="text-xs text-muted-foreground">Copie a chave abaixo e realize o pagamento:</p>
+              <div className="flex items-center gap-2 bg-card rounded-lg p-2.5 border border-border">
+                <code className="flex-1 text-xs font-mono break-all text-foreground">{PIX_KEY}</code>
+                <Button variant="outline" size="icon" className="h-8 w-8 flex-shrink-0 rounded-lg" onClick={copyPix}>
                   <Copy className={`h-4 w-4 ${copied ? 'text-success' : ''}`} />
                 </Button>
               </div>
-              <div className="mt-3 p-3 bg-accent/10 rounded-md border border-accent/20">
-                <p className="text-sm font-semibold text-accent">⚠️ Importante:</p>
-                <p className="text-sm mt-1">Coloque o número <strong>{orderNumber}</strong> na descrição do PIX para identificarmos seu pagamento!</p>
+              <div className="p-3 bg-accent/8 rounded-lg border border-accent/15">
+                <p className="text-xs font-semibold text-foreground">Importante</p>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Coloque o número <span className="font-bold text-foreground">{orderNumber}</span> na descrição do PIX para identificarmos seu pagamento.
+                </p>
               </div>
             </div>
-            <div className="flex gap-2 mt-4">
-              <Button className="flex-1 btn-accent" onClick={() => navigate("/meus-pedidos")}>
-                Ver Meus Pedidos
+
+            <div className="flex gap-2 mt-5">
+              <Button variant="accent" className="flex-1" onClick={() => navigate("/meus-pedidos")}>
+                Ver Pedidos
               </Button>
               <Button variant="outline" className="flex-1" onClick={() => navigate("/")}>
-                Voltar ao Cardápio
+                Cardápio
               </Button>
             </div>
           </div>
@@ -93,10 +98,16 @@ export default function Checkout() {
   return (
     <div className="min-h-screen bg-background">
       <AppHeader />
-      <main className="container px-4 py-6 max-w-lg mx-auto">
-        <h1 className="font-display text-2xl font-bold mb-4">Checkout</h1>
-        <div className="bg-card rounded-xl p-4 shadow-sm border border-border">
-          <h2 className="font-display font-semibold mb-3">Resumo do Pedido</h2>
+      <main className="container px-4 py-5 max-w-lg mx-auto">
+        <div className="flex items-center gap-3 mb-5">
+          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => navigate("/carrinho")}>
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
+          <h1 className="font-display text-xl font-bold">Checkout</h1>
+        </div>
+
+        <div className="bg-card rounded-xl p-4 border border-border animate-fade-up">
+          <h2 className="font-display font-semibold text-sm mb-3 text-muted-foreground uppercase tracking-wider">Resumo</h2>
           {items.map(item => (
             <div key={item.id} className="flex justify-between py-2 border-b border-border last:border-0">
               <span className="text-sm">{item.quantity}x {item.title}</span>
@@ -104,11 +115,12 @@ export default function Checkout() {
             </div>
           ))}
           <div className="flex justify-between mt-3 pt-3 border-t border-border">
-            <span className="font-display font-bold text-lg">Total</span>
-            <span className="font-display font-bold text-lg text-accent">R${total.toFixed(2).replace('.', ',')}</span>
+            <span className="font-display font-bold">Total</span>
+            <span className="font-display font-bold text-lg">R${total.toFixed(2).replace('.', ',')}</span>
           </div>
         </div>
-        <Button className="w-full mt-4 btn-accent h-12 text-base" onClick={handlePlaceOrder} disabled={loading || items.length === 0}>
+
+        <Button variant="accent" className="w-full mt-4 h-12 text-base font-semibold" onClick={handlePlaceOrder} disabled={loading || items.length === 0}>
           {loading ? "Processando..." : "Confirmar Pedido"}
         </Button>
       </main>

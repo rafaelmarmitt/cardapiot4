@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CheckCircle, Clock } from "lucide-react";
 import { toast } from "sonner";
 
@@ -51,39 +52,34 @@ export default function AdminOrders() {
   if (loading) return <div className="py-8 text-center text-muted-foreground text-sm">Carregando pedidos...</div>;
 
   return (
-    <div className="space-y-5 mt-4">
+    <div className="mt-4">
       {orders.length === 0 ? (
         <p className="text-center py-12 text-muted-foreground text-sm">Nenhum pedido ainda</p>
       ) : (
-        <>
-          {/* Pendentes */}
-          {orders.filter(o => o.status === "pending").length > 0 && (
-            <div>
-              <h3 className="font-display font-semibold text-sm mb-2 flex items-center gap-1.5">
-                <Clock className="h-4 w-4 text-warning" /> Pendentes
-              </h3>
-              <div className="space-y-2">
-                {orders.filter(o => o.status === "pending").map((order, i) => (
-                  <OrderCard key={order.id} order={order} index={i} onApprove={approveOrder} />
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Aprovados */}
-          {orders.filter(o => o.status === "approved").length > 0 && (
-            <div>
-              <h3 className="font-display font-semibold text-sm mb-2 flex items-center gap-1.5">
-                <CheckCircle className="h-4 w-4 text-success" /> Aprovados
-              </h3>
-              <div className="space-y-2">
-                {orders.filter(o => o.status === "approved").map((order, i) => (
-                  <OrderCard key={order.id} order={order} index={i} />
-                ))}
-              </div>
-            </div>
-          )}
-        </>
+        <Tabs defaultValue="pending">
+          <TabsList className="w-full">
+            <TabsTrigger value="pending" className="flex-1 gap-1.5">
+              <Clock className="h-3.5 w-3.5" /> Pendentes ({orders.filter(o => o.status === "pending").length})
+            </TabsTrigger>
+            <TabsTrigger value="approved" className="flex-1 gap-1.5">
+              <CheckCircle className="h-3.5 w-3.5" /> Aprovados ({orders.filter(o => o.status === "approved").length})
+            </TabsTrigger>
+          </TabsList>
+          <TabsContent value="pending" className="space-y-2 mt-3">
+            {orders.filter(o => o.status === "pending").length === 0 ? (
+              <p className="text-center py-8 text-muted-foreground text-sm">Nenhum pedido pendente</p>
+            ) : orders.filter(o => o.status === "pending").map((order, i) => (
+              <OrderCard key={order.id} order={order} index={i} onApprove={approveOrder} />
+            ))}
+          </TabsContent>
+          <TabsContent value="approved" className="space-y-2 mt-3">
+            {orders.filter(o => o.status === "approved").length === 0 ? (
+              <p className="text-center py-8 text-muted-foreground text-sm">Nenhum pedido aprovado</p>
+            ) : orders.filter(o => o.status === "approved").map((order, i) => (
+              <OrderCard key={order.id} order={order} index={i} />
+            ))}
+          </TabsContent>
+        </Tabs>
       )}
     </div>
   );

@@ -119,9 +119,15 @@ export default function AdminProducts() {
                 <Label className="text-xs font-medium">Descrição</Label>
                 <Textarea value={description} onChange={e => setDescription(e.target.value)} placeholder="Descrição curta" rows={2} className="mt-1" />
               </div>
-              <div>
-                <Label className="text-xs font-medium">Preço (R$)</Label>
-                <Input type="number" step="0.01" value={price} onChange={e => setPrice(e.target.value)} placeholder="5.00" className="mt-1" />
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label className="text-xs font-medium">Preço venda (R$)</Label>
+                  <Input type="number" step="0.01" value={price} onChange={e => setPrice(e.target.value)} placeholder="10.00" className="mt-1" />
+                </div>
+                <div>
+                  <Label className="text-xs font-medium">Custo (R$)</Label>
+                  <Input type="number" step="0.01" value={costPrice} onChange={e => setCostPrice(e.target.value)} placeholder="5.00" className="mt-1" />
+                </div>
               </div>
               <div>
                 <Label className="text-xs font-medium">Imagem</Label>

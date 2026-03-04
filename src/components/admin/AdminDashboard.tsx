@@ -5,6 +5,7 @@ import { DollarSign, ShoppingBag, Clock, CheckCircle, TrendingUp, PackageCheck }
 interface Stats {
   totalOrders: number;
   totalRevenue: number;
+  totalProfit: number;
   pendingOrders: number;
   approvedOrders: number;
   deliveredOrders: number;
@@ -22,12 +23,13 @@ interface Stats {
 export default function AdminDashboard() {
   const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
+  const [showProfit, setShowProfit] = useState(false);
 
   useEffect(() => {
     async function load() {
       const [ordersRes, productsRes] = await Promise.all([
         supabase.from("orders").select("*").order("created_at", { ascending: false }),
-        supabase.from("products").select("id"),
+        supabase.from("products").select("id, title, cost_price" as any),
       ]);
 
       const orders = ordersRes.data ?? [];
@@ -45,9 +47,27 @@ export default function AdminDashboard() {
       const deliveredOrders = orders.filter(o => o.status === "delivered").length;
       const totalRevenue = orders.filter(o => o.status === "approved" || o.status === "delivered").reduce((sum, o) => sum + Number(o.total), 0);
 
+      // Build cost map from products
+      const costMap = new Map<string, number>((products as any[]).map((p: any) => [p.id, Number(p.cost_price ?? 0)]));
+      
+      // Calculate total cost from order items
+      const completedOrdersList = orders.filter(o => o.status === "approved" || o.status === "delivered");
+      let totalCost = 0;
+      for (const order of completedOrdersList) {
+        const items = order.items as any[];
+        if (Array.isArray(items)) {
+          for (const item of items) {
+            const itemCost = costMap.get(item.id) ?? 0;
+            totalCost += itemCost * (item.quantity ?? 1);
+          }
+        }
+      }
+      const totalProfit = totalRevenue - totalCost;
+
       setStats({
         totalOrders: orders.length,
         totalRevenue,
+        totalProfit,
         pendingOrders,
         approvedOrders,
         deliveredOrders,
@@ -82,8 +102,11 @@ export default function AdminDashboard() {
 
   const completedOrders = stats.approvedOrders + stats.deliveredOrders;
 
+  const revenueLabel = showProfit ? "Lucro" : "Receita Bruta";
+  const revenueValue = showProfit ? stats.totalProfit : stats.totalRevenue;
+
   const cards = [
-    { label: "Receita Total", value: `R$${stats.totalRevenue.toFixed(2).replace('.', ',')}`, icon: DollarSign, color: "text-success" },
+    { label: revenueLabel, value: `R$${revenueValue.toFixed(2).replace('.', ',')}`, icon: DollarSign, color: "text-success", onClick: () => setShowProfit(!showProfit) },
     { label: "Total de Pedidos", value: stats.totalOrders.toString(), icon: ShoppingBag, color: "text-primary" },
     { label: "Pendentes", value: stats.pendingOrders.toString(), icon: Clock, color: "text-warning" },
     { label: "Aprovados", value: stats.approvedOrders.toString(), icon: CheckCircle, color: "text-success" },
@@ -94,11 +117,12 @@ export default function AdminDashboard() {
     <div className="mt-4 space-y-5">
       {/* Stat Cards */}
       <div className="grid grid-cols-2 gap-3">
-        {cards.map((card, i) => (
+          {cards.map((card, i) => (
           <div
             key={card.label}
-            className="bg-card rounded-xl p-4 border border-border animate-fade-up"
+            className={`bg-card rounded-xl p-4 border border-border animate-fade-up ${card.onClick ? 'cursor-pointer hover:border-primary/30 transition-colors' : ''}`}
             style={{ animationDelay: `${i * 60}ms` }}
+            onClick={card.onClick}
           >
             <div className="flex items-center justify-between mb-2">
               <span className="text-xs text-muted-foreground font-medium uppercase tracking-wider">{card.label}</span>

@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { CheckCircle, Clock } from "lucide-react";
+import { CheckCircle, Clock, PackageCheck } from "lucide-react";
 import { toast } from "sonner";
 
 interface Order {
@@ -70,6 +70,13 @@ export default function AdminOrders() {
     fetchOrders();
   }
 
+  async function deliverOrder(id: string) {
+    const { error } = await supabase.from("orders").update({ status: "delivered" }).eq("id", id);
+    if (error) { toast.error("Erro ao marcar como entregue"); return; }
+    toast.success("Pedido marcado como entregue");
+    fetchOrders();
+  }
+
   if (loading) return <div className="py-8 text-center text-muted-foreground text-sm">Carregando pedidos...</div>;
 
   return (
@@ -85,6 +92,9 @@ export default function AdminOrders() {
             <TabsTrigger value="approved" className="flex-1 gap-1.5">
               <CheckCircle className="h-3.5 w-3.5" /> Aprovados ({orders.filter(o => o.status === "approved").length})
             </TabsTrigger>
+            <TabsTrigger value="delivered" className="flex-1 gap-1.5">
+              <PackageCheck className="h-3.5 w-3.5" /> Entregues ({orders.filter(o => o.status === "delivered").length})
+            </TabsTrigger>
           </TabsList>
           <TabsContent value="pending" className="space-y-2 mt-3">
             {orders.filter(o => o.status === "pending").length === 0 ? (
@@ -97,6 +107,13 @@ export default function AdminOrders() {
             {orders.filter(o => o.status === "approved").length === 0 ? (
               <p className="text-center py-8 text-muted-foreground text-sm">Nenhum pedido aprovado</p>
             ) : orders.filter(o => o.status === "approved").map((order, i) => (
+              <OrderCard key={order.id} order={order} index={i} onDeliver={deliverOrder} />
+            ))}
+          </TabsContent>
+          <TabsContent value="delivered" className="space-y-2 mt-3">
+            {orders.filter(o => o.status === "delivered").length === 0 ? (
+              <p className="text-center py-8 text-muted-foreground text-sm">Nenhum pedido entregue</p>
+            ) : orders.filter(o => o.status === "delivered").map((order, i) => (
               <OrderCard key={order.id} order={order} index={i} />
             ))}
           </TabsContent>
@@ -106,7 +123,7 @@ export default function AdminOrders() {
   );
 }
 
-function OrderCard({ order, index, onApprove }: { order: Order; index: number; onApprove?: (id: string) => void }) {
+function OrderCard({ order, index, onApprove, onDeliver }: { order: Order; index: number; onApprove?: (id: string) => void; onDeliver?: (id: string) => void }) {
   return (
     <div className="bg-card rounded-xl p-4 border border-border animate-fade-up" style={{ animationDelay: `${index * 40}ms` }}>
       <div className="flex items-center justify-between mb-1.5">
@@ -114,7 +131,9 @@ function OrderCard({ order, index, onApprove }: { order: Order; index: number; o
           <span className="font-display font-bold text-sm">#{order.order_number}</span>
           <span className="text-xs text-muted-foreground">{order.profiles?.name}</span>
         </div>
-        {order.status === "approved" ? (
+        {order.status === "delivered" ? (
+          <span className="badge-approved flex items-center"><PackageCheck className="h-3 w-3 mr-1" />Entregue</span>
+        ) : order.status === "approved" ? (
           <span className="badge-approved"><CheckCircle className="h-3 w-3 mr-1" />Aprovado</span>
         ) : (
           <span className="badge-pending"><Clock className="h-3 w-3 mr-1" />Pendente</span>
@@ -133,6 +152,11 @@ function OrderCard({ order, index, onApprove }: { order: Order; index: number; o
         {order.status === "pending" && onApprove && (
           <Button variant="accent" size="sm" className="h-8 text-xs" onClick={() => onApprove(order.id)}>
             Aprovar Pagamento
+          </Button>
+        )}
+        {order.status === "approved" && onDeliver && (
+          <Button variant="outline" size="sm" className="h-8 text-xs gap-1" onClick={() => onDeliver(order.id)}>
+            <PackageCheck className="h-3.5 w-3.5" /> Entregue
           </Button>
         )}
       </div>

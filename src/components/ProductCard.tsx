@@ -21,7 +21,7 @@ export default function ProductCard({ id, title, description, price, image_url }
 
   return (
     <div className="group bg-card rounded-xl border border-border overflow-hidden transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5 animate-fade-up">
-      <div className="aspect-square bg-secondary overflow-hidden">
+      <div className="aspect-[4/3] bg-secondary overflow-hidden">
         {image_url ? (
           <img src={image_url} alt={title} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
         ) : (

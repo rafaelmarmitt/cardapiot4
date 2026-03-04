@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import AppHeader from "@/components/AppHeader";
-import { Ticket, Clock, CheckCircle } from "lucide-react";
+import { Ticket, Clock, CheckCircle, PackageCheck } from "lucide-react";
 
 interface Order {
   id: string;
@@ -55,14 +55,16 @@ export default function MeusPedidos() {
               <div key={order.id} className="bg-card rounded-xl p-4 border border-border animate-fade-up" style={{ animationDelay: `${i * 60}ms` }}>
                 <div className="flex items-center justify-between mb-2">
                   <span className="font-display font-bold text-sm">#{order.order_number}</span>
-                  {order.status === "approved" ? (
+                  {order.status === "delivered" ? (
+                    <span className="badge-approved"><PackageCheck className="h-3 w-3 mr-1" />Entregue</span>
+                  ) : order.status === "approved" ? (
                     <span className="badge-approved"><CheckCircle className="h-3 w-3 mr-1" />Aprovado</span>
                   ) : (
                     <span className="badge-pending"><Clock className="h-3 w-3 mr-1" />Pendente</span>
                   )}
                 </div>
                 <p className="text-xs text-muted-foreground mb-2">
-                  {new Date(order.created_at).toLocaleDateString("pt-BR", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}
+                  {new Date(order.created_at).toLocaleDateString("pt-BR", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })}
                 </p>
                 <div className="space-y-1 mb-3">
                   {(order.items as any[]).map((item: any, idx: number) => (
@@ -74,7 +76,7 @@ export default function MeusPedidos() {
                 </div>
                 <div className="flex justify-between items-center pt-3 border-t border-border">
                   <span className="font-display font-bold text-sm">R${Number(order.total).toFixed(2).replace('.', ',')}</span>
-                  {order.status === "approved" && (
+                  {(order.status === "approved" || order.status === "delivered") && (
                     <div className="flex items-center gap-1.5 bg-success/10 text-success px-3 py-1.5 rounded-lg">
                       <Ticket className="h-3.5 w-3.5" />
                       <span className="text-xs font-bold tracking-wide">TICKET #{order.order_number}</span>

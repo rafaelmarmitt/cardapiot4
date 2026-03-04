@@ -39,9 +39,9 @@ export default function AdminDashboard() {
         : { data: [] };
       const profileMap = new Map<string, string>(profiles?.map(p => [p.user_id, p.name] as [string, string]) ?? []);
 
-      const totalRevenue = orders.reduce((sum, o) => sum + Number(o.total), 0);
       const pendingOrders = orders.filter(o => o.status === "pending").length;
       const approvedOrders = orders.filter(o => o.status === "approved").length;
+      const totalRevenue = orders.filter(o => o.status === "approved").reduce((sum, o) => sum + Number(o.total), 0);
 
       setStats({
         totalOrders: orders.length,

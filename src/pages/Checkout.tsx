@@ -15,6 +15,7 @@ export default function Checkout() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [orderNumber, setOrderNumber] = useState<string | null>(null);
+  const [orderTotal, setOrderTotal] = useState<number>(0);
   const [loading, setLoading] = useState(false);
   const [copied, setCopied] = useState(false);
 
@@ -32,6 +33,7 @@ export default function Checkout() {
       });
       if (error) throw error;
       setOrderNumber(num);
+      setOrderTotal(total);
       clearCart();
       toast.success("Pedido criado!");
     } catch (err: any) {
@@ -62,6 +64,7 @@ export default function Checkout() {
             <div className="bg-secondary rounded-xl p-4 my-5">
               <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium">Número do Pedido</p>
               <p className="font-display text-4xl font-bold text-foreground mt-1 tracking-wider">{orderNumber}</p>
+              <p className="font-display text-lg font-bold text-foreground mt-2">R${orderTotal.toFixed(2).replace('.', ',')}</p>
             </div>
 
             <div className="bg-secondary rounded-xl p-4 text-left space-y-3">

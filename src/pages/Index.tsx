@@ -34,12 +34,11 @@ export default function Index() {
         <div className="absolute bottom-0 left-0 right-0 px-4 pb-4">
           <div className="container">
             <div className="flex items-end gap-3">
-              <div className="w-12 h-12 rounded-xl bg-accent flex items-center justify-center shadow-lg">
-                <span className="font-display text-xl font-bold text-accent-foreground">T4</span>
+               <div className="w-12 h-12 rounded-xl bg-accent flex items-center justify-center shadow-lg">
+                <span className="font-display text-xl font-bold text-accent-foreground">CD</span>
               </div>
               <div>
-                <h1 className="font-display text-2xl font-bold text-foreground leading-none">Terceirão T4</h1>
-                <p className="text-muted-foreground text-sm mt-0.5">Cardápio Digital</p>
+                <h1 className="font-display text-2xl font-bold text-foreground leading-none">Cardápio Digital</h1>
               </div>
             </div>
           </div>

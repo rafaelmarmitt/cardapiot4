@@ -42,6 +42,27 @@ export default function AdminOrders() {
 
   useEffect(() => { fetchOrders(); }, []);
 
+  useEffect(() => {
+    const channel = supabase
+      .channel('admin-orders')
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'orders' },
+        () => {
+          toast.info("🔔 Novo pedido recebido!");
+          fetchOrders();
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'orders' },
+        () => { fetchOrders(); }
+      )
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, []);
+
   async function approveOrder(id: string) {
     const { error } = await supabase.from("orders").update({ status: "approved" }).eq("id", id);
     if (error) { toast.error("Erro ao aprovar"); return; }

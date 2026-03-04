@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CheckCircle, Clock, PackageCheck } from "lucide-react";
 import { toast } from "sonner";
@@ -19,6 +20,8 @@ interface Order {
 export default function AdminOrders() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
+  const [pendingSearch, setPendingSearch] = useState("");
+  const [approvedSearch, setApprovedSearch] = useState("");
 
   async function fetchOrders() {
     const { data: ordersData } = await supabase
@@ -77,6 +80,30 @@ export default function AdminOrders() {
     fetchOrders();
   }
 
+  const pendingOrders = orders.filter(o => o.status === "pending");
+  const approvedOrders = orders.filter(o => o.status === "approved");
+  const deliveredOrders = orders.filter(o => o.status === "delivered");
+
+  const filterOrders = (list: Order[], term: string) => {
+    const query = term.trim().toLowerCase();
+    if (!query) return list;
+
+    return list.filter(order => {
+      const items = (order.items as any[])
+        .map((item: any) => `${item.title ?? ""}`.toLowerCase())
+        .join(" ");
+
+      return (
+        order.order_number.toLowerCase().includes(query) ||
+        (order.profiles?.name ?? "").toLowerCase().includes(query) ||
+        items.includes(query)
+      );
+    });
+  };
+
+  const filteredPendingOrders = filterOrders(pendingOrders, pendingSearch);
+  const filteredApprovedOrders = filterOrders(approvedOrders, approvedSearch);
+
   if (loading) return <div className="py-8 text-center text-muted-foreground text-sm">Carregando pedidos...</div>;
 
   return (
@@ -87,33 +114,45 @@ export default function AdminOrders() {
         <Tabs defaultValue="pending">
           <TabsList className="w-full">
             <TabsTrigger value="pending" className="flex-1 gap-1.5">
-              <Clock className="h-3.5 w-3.5" /> Pendentes ({orders.filter(o => o.status === "pending").length})
+              <Clock className="h-3.5 w-3.5" /> Pendentes ({pendingOrders.length})
             </TabsTrigger>
             <TabsTrigger value="approved" className="flex-1 gap-1.5">
-              <CheckCircle className="h-3.5 w-3.5" /> Aprovados ({orders.filter(o => o.status === "approved").length})
+              <CheckCircle className="h-3.5 w-3.5" /> Aprovados ({approvedOrders.length})
             </TabsTrigger>
             <TabsTrigger value="delivered" className="flex-1 gap-1.5">
-              <PackageCheck className="h-3.5 w-3.5" /> Entregues ({orders.filter(o => o.status === "delivered").length})
+              <PackageCheck className="h-3.5 w-3.5" /> Entregues ({deliveredOrders.length})
             </TabsTrigger>
           </TabsList>
           <TabsContent value="pending" className="space-y-2 mt-3">
-            {orders.filter(o => o.status === "pending").length === 0 ? (
-              <p className="text-center py-8 text-muted-foreground text-sm">Nenhum pedido pendente</p>
-            ) : orders.filter(o => o.status === "pending").map((order, i) => (
+            <Input
+              value={pendingSearch}
+              onChange={(e) => setPendingSearch(e.target.value)}
+              placeholder="Buscar em pendentes por número, cliente ou item"
+              className="h-9"
+            />
+            {filteredPendingOrders.length === 0 ? (
+              <p className="text-center py-8 text-muted-foreground text-sm">Nenhum pedido pendente encontrado</p>
+            ) : filteredPendingOrders.map((order, i) => (
               <OrderCard key={order.id} order={order} index={i} onApprove={approveOrder} />
             ))}
           </TabsContent>
           <TabsContent value="approved" className="space-y-2 mt-3">
-            {orders.filter(o => o.status === "approved").length === 0 ? (
-              <p className="text-center py-8 text-muted-foreground text-sm">Nenhum pedido aprovado</p>
-            ) : orders.filter(o => o.status === "approved").map((order, i) => (
+            <Input
+              value={approvedSearch}
+              onChange={(e) => setApprovedSearch(e.target.value)}
+              placeholder="Buscar em aprovados por número, cliente ou item"
+              className="h-9"
+            />
+            {filteredApprovedOrders.length === 0 ? (
+              <p className="text-center py-8 text-muted-foreground text-sm">Nenhum pedido aprovado encontrado</p>
+            ) : filteredApprovedOrders.map((order, i) => (
               <OrderCard key={order.id} order={order} index={i} onDeliver={deliverOrder} />
             ))}
           </TabsContent>
           <TabsContent value="delivered" className="space-y-2 mt-3">
-            {orders.filter(o => o.status === "delivered").length === 0 ? (
+            {deliveredOrders.length === 0 ? (
               <p className="text-center py-8 text-muted-foreground text-sm">Nenhum pedido entregue</p>
-            ) : orders.filter(o => o.status === "delivered").map((order, i) => (
+            ) : deliveredOrders.map((order, i) => (
               <OrderCard key={order.id} order={order} index={i} />
             ))}
           </TabsContent>

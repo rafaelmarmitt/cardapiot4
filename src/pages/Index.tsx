@@ -11,6 +11,7 @@ interface Product {
   description: string | null;
   price: number;
   image_url: string | null;
+  stock: number;
 }
 
 export default function Index() {

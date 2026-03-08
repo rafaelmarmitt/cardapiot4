@@ -11,9 +11,10 @@ interface Props {
   description: string | null;
   price: number;
   image_url: string | null;
+  stock: number;
 }
 
-export default function ProductCard({ id, title, description, price, image_url }: Props) {
+export default function ProductCard({ id, title, description, price, image_url, stock }: Props) {
   const { addItem } = useCart();
   const { user } = useAuth();
   const navigate = useNavigate();

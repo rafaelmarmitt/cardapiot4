@@ -173,7 +173,7 @@ export default function AdminProducts() {
             </div>
             <div className="flex-1 min-w-0">
               <p className="font-display font-semibold text-sm truncate">{p.title}</p>
-              <p className="text-muted-foreground text-xs">R${p.price.toFixed(2).replace('.', ',')} · Custo R${(p.cost_price ?? 0).toFixed(2).replace('.', ',')}</p>
+              <p className="text-muted-foreground text-xs">R${p.price.toFixed(2).replace('.', ',')} · Custo R${(p.cost_price ?? 0).toFixed(2).replace('.', ',')} · Estoque: {(p as any).stock ?? 0}</p>
             </div>
             <div className="flex gap-1">
               <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground" onClick={() => openEdit(p)}>

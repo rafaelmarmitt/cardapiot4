@@ -52,9 +52,13 @@ export default function ProductCard({ id, title, description, price, image_url, 
           <span className="font-display font-bold text-base text-foreground">
             R${price.toFixed(2).replace('.', ',')}
           </span>
-          <Button variant="accent" size="sm" className="h-8 px-3 text-xs rounded-lg" onClick={handleAdd}>
-            <Plus className="h-3.5 w-3.5 mr-1" /> Adicionar
-          </Button>
+          {outOfStock ? (
+            <span className="text-xs font-medium text-destructive">Esgotado</span>
+          ) : (
+            <Button variant="accent" size="sm" className="h-8 px-3 text-xs rounded-lg" onClick={handleAdd}>
+              <Plus className="h-3.5 w-3.5 mr-1" /> Adicionar
+            </Button>
+          )}
         </div>
       </div>
     </div>

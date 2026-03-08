@@ -19,7 +19,10 @@ export default function ProductCard({ id, title, description, price, image_url, 
   const { user } = useAuth();
   const navigate = useNavigate();
 
+  const outOfStock = stock <= 0;
+
   function handleAdd() {
+    if (outOfStock) { toast.error("Produto sem estoque"); return; }
     if (!user) {
       toast.error("Faça login para adicionar itens ao carrinho");
       navigate("/login");

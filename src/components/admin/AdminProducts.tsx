@@ -4,8 +4,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Plus, Pencil, Trash2, Upload, ImageIcon } from "lucide-react";
+import { Plus, Pencil, Trash2, ImageIcon, Eye, EyeOff } from "lucide-react";
 import { toast } from "sonner";
 
 interface Product {
@@ -161,7 +162,7 @@ export default function AdminProducts() {
 
       <div className="space-y-2">
         {products.map(p => (
-          <div key={p.id} className="bg-card rounded-xl p-3 flex items-center gap-3 border border-border">
+          <div key={p.id} className={`bg-card rounded-xl p-3 flex items-center gap-3 border border-border ${!(p as any).visible ? 'opacity-50' : ''}`}>
             <div className="w-12 h-12 rounded-lg bg-secondary overflow-hidden flex-shrink-0">
               {p.image_url ? (
                 <img src={p.image_url} alt={p.title} className="w-full h-full object-cover" />
@@ -175,7 +176,22 @@ export default function AdminProducts() {
               <p className="font-display font-semibold text-sm truncate">{p.title}</p>
               <p className="text-muted-foreground text-xs">R${p.price.toFixed(2).replace('.', ',')} · Custo R${(p.cost_price ?? 0).toFixed(2).replace('.', ',')} · Estoque: {(p as any).stock ?? 0}</p>
             </div>
-            <div className="flex gap-1">
+            <div className="flex gap-1 items-center">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                title={(p as any).visible ? "Ocultar do cardápio" : "Mostrar no cardápio"}
+                onClick={async () => {
+                  const newVisible = !(p as any).visible;
+                  const { error } = await supabase.from("products").update({ visible: newVisible } as any).eq("id", p.id);
+                  if (error) { toast.error("Erro ao atualizar visibilidade"); return; }
+                  toast.success(newVisible ? "Produto visível no cardápio" : "Produto oculto do cardápio");
+                  fetchProducts();
+                }}
+              >
+                {(p as any).visible ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />}
+              </Button>
               <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground" onClick={() => openEdit(p)}>
                 <Pencil className="h-3.5 w-3.5" />
               </Button>

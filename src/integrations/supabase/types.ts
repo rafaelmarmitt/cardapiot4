@@ -54,6 +54,7 @@ export type Database = {
           price: number
           stock: number
           title: string
+          visible: boolean
         }
         Insert: {
           cost_price?: number
@@ -64,6 +65,7 @@ export type Database = {
           price?: number
           stock?: number
           title: string
+          visible?: boolean
         }
         Update: {
           cost_price?: number
@@ -74,6 +76,7 @@ export type Database = {
           price?: number
           stock?: number
           title?: string
+          visible?: boolean
         }
         Relationships: []
       }

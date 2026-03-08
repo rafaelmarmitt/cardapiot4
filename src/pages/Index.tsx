@@ -12,6 +12,7 @@ interface Product {
   price: number;
   image_url: string | null;
   stock: number;
+  visible: boolean;
 }
 
 export default function Index() {
@@ -19,7 +20,7 @@ export default function Index() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    supabase.from("products").select("*").order("created_at", { ascending: true }).then(({ data }) => {
+    supabase.from("products").select("*").eq("visible", true).order("created_at", { ascending: true }).then(({ data }) => {
       setProducts(data ?? []);
       setLoading(false);
     });

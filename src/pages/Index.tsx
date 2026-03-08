@@ -12,6 +12,7 @@ interface Product {
   price: number;
   image_url: string | null;
   stock: number;
+  visible: boolean;
 }
 
 export default function Index() {

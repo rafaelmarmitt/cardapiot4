@@ -26,6 +26,7 @@ export default function AdminProducts() {
   const [description, setDescription] = useState("");
   const [price, setPrice] = useState("");
   const [costPrice, setCostPrice] = useState("");
+  const [stock, setStock] = useState("");
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);

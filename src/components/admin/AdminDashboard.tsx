@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { DollarSign, ShoppingBag, Clock, CheckCircle, TrendingUp, PackageCheck } from "lucide-react";
+import { DollarSign, ShoppingBag, Clock, CheckCircle, TrendingUp, PackageCheck, BarChart3 } from "lucide-react";
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from "recharts";
 
 interface Stats {
   totalOrders: number;
@@ -18,12 +19,25 @@ interface Stats {
     created_at: string;
     customer_name: string;
   }[];
+  productSales: { name: string; qty: number; revenue: number }[];
 }
+
+const CHART_COLORS = [
+  "hsl(var(--primary))",
+  "hsl(var(--accent))",
+  "hsl(var(--success, 142 71% 45%))",
+  "hsl(var(--warning, 38 92% 50%))",
+  "hsl(var(--destructive))",
+  "hsl(260 60% 55%)",
+  "hsl(190 70% 45%)",
+  "hsl(330 60% 50%)",
+];
 
 export default function AdminDashboard() {
   const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
   const [showProfit, setShowProfit] = useState(false);
+  const [chartMode, setChartMode] = useState<"qty" | "revenue">("qty");
 
   useEffect(() => {
     async function load() {
@@ -35,7 +49,6 @@ export default function AdminDashboard() {
       const orders = ordersRes.data ?? [];
       const products = productsRes.data ?? [];
 
-      // Fetch profile names
       const userIds = [...new Set(orders.map(o => o.user_id))];
       const { data: profiles } = userIds.length > 0
         ? await supabase.from("profiles").select("user_id, name").in("user_id", userIds)
@@ -47,22 +60,31 @@ export default function AdminDashboard() {
       const deliveredOrders = orders.filter(o => o.status === "delivered").length;
       const totalRevenue = orders.filter(o => o.status === "approved" || o.status === "delivered").reduce((sum, o) => sum + Number(o.total), 0);
 
-      // Build cost map from products
       const costMap = new Map<string, number>((products as any[]).map((p: any) => [p.id, Number(p.cost_price ?? 0)]));
-      
-      // Calculate total cost from order items
+      const productNameMap = new Map<string, string>((products as any[]).map((p: any) => [p.id, p.title]));
+
       const completedOrdersList = orders.filter(o => o.status === "approved" || o.status === "delivered");
       let totalCost = 0;
+
+      // Aggregate product sales
+      const salesMap = new Map<string, { qty: number; revenue: number }>();
       for (const order of completedOrdersList) {
         const items = order.items as any[];
         if (Array.isArray(items)) {
           for (const item of items) {
             const itemCost = costMap.get(item.id) ?? 0;
-            totalCost += itemCost * (item.quantity ?? 1);
+            const qty = item.quantity ?? 1;
+            totalCost += itemCost * qty;
+            const prev = salesMap.get(item.id) ?? { qty: 0, revenue: 0 };
+            salesMap.set(item.id, { qty: prev.qty + qty, revenue: prev.revenue + (Number(item.price ?? 0) * qty) });
           }
         }
       }
       const totalProfit = totalRevenue - totalCost;
+
+      const productSales = Array.from(salesMap.entries())
+        .map(([id, data]) => ({ name: productNameMap.get(id) ?? id.slice(0, 6), ...data }))
+        .sort((a, b) => b.qty - a.qty);
 
       setStats({
         totalOrders: orders.length,
@@ -80,6 +102,7 @@ export default function AdminDashboard() {
           created_at: o.created_at,
           customer_name: profileMap.get(o.user_id) ?? "Sem nome",
         })),
+        productSales,
       });
       setLoading(false);
     }
@@ -117,7 +140,7 @@ export default function AdminDashboard() {
     <div className="mt-4 space-y-5">
       {/* Stat Cards */}
       <div className="grid grid-cols-2 gap-3">
-          {cards.map((card, i) => (
+        {cards.map((card, i) => (
           <div
             key={card.label}
             className={`bg-card rounded-xl p-4 border border-border animate-fade-up ${card.onClick ? 'cursor-pointer hover:border-primary/30 transition-colors' : ''}`}
@@ -153,30 +176,40 @@ export default function AdminDashboard() {
                 : "R$0,00"}
             </p>
           </div>
-          <div className="flex-1">
-            <p className="text-xs text-muted-foreground">Taxa conclusão</p>
-            <p className="font-display font-bold text-lg">
-              {stats.totalOrders > 0
-                ? `${Math.round((completedOrders / stats.totalOrders) * 100)}%`
-                : "0%"}
-            </p>
-          </div>
         </div>
       </div>
 
-      {/* Approval Progress */}
-      {stats.totalOrders > 0 && (
+      {/* Product Sales Chart */}
+      {stats.productSales.length > 0 && (
         <div className="bg-card rounded-xl p-4 border border-border animate-fade-up" style={{ animationDelay: "300ms" }}>
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-xs text-muted-foreground font-medium">Progresso de conclusão</span>
-            <span className="text-xs font-semibold">{completedOrders}/{stats.totalOrders}</span>
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <BarChart3 className="h-4 w-4 text-primary" />
+              <span className="font-display font-semibold text-sm">Vendas por Produto</span>
+            </div>
+            <button
+              className="text-[10px] font-medium px-2 py-1 rounded-md bg-secondary text-muted-foreground hover:text-foreground transition-colors"
+              onClick={() => setChartMode(chartMode === "qty" ? "revenue" : "qty")}
+            >
+              {chartMode === "qty" ? "Ver receita" : "Ver quantidade"}
+            </button>
           </div>
-          <div className="w-full h-2 bg-secondary rounded-full overflow-hidden">
-            <div
-              className="h-full bg-primary rounded-full transition-all duration-700"
-              style={{ width: `${(completedOrders / stats.totalOrders) * 100}%` }}
-            />
-          </div>
+          <ResponsiveContainer width="100%" height={Math.max(180, stats.productSales.length * 40)}>
+            <BarChart data={stats.productSales} layout="vertical" margin={{ left: 0, right: 12, top: 4, bottom: 4 }}>
+              <XAxis type="number" hide />
+              <YAxis type="category" dataKey="name" width={90} tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} tickLine={false} axisLine={false} />
+              <Tooltip
+                cursor={{ fill: "hsl(var(--secondary))" }}
+                contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 12, fontSize: 12 }}
+                formatter={(value: number) => chartMode === "revenue" ? [`R$${value.toFixed(2).replace('.', ',')}`, "Receita"] : [value, "Vendidos"]}
+              />
+              <Bar dataKey={chartMode} radius={[0, 6, 6, 0]} barSize={20}>
+                {stats.productSales.map((_, i) => (
+                  <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
         </div>
       )}
 

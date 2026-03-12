@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Plus, Pencil, Trash2, ImageIcon, Eye, EyeOff } from "lucide-react";
 import { toast } from "sonner";
@@ -16,7 +17,13 @@ interface Product {
   price: number;
   cost_price: number;
   image_url: string | null;
+  category: string;
 }
+
+const CATEGORIES = [
+  { value: "bebidas", label: "Bebidas" },
+  { value: "comidas", label: "Comidas" },
+];
 
 export default function AdminProducts() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -28,6 +35,7 @@ export default function AdminProducts() {
   const [price, setPrice] = useState("");
   const [costPrice, setCostPrice] = useState("");
   const [stock, setStock] = useState("");
+  const [category, setCategory] = useState("bebidas");
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -42,12 +50,12 @@ export default function AdminProducts() {
   useEffect(() => { fetchProducts(); }, []);
 
   function openCreate() {
-    setEditing(null); setTitle(""); setDescription(""); setPrice(""); setCostPrice(""); setStock(""); setImageFile(null); setImagePreview(null);
+    setEditing(null); setTitle(""); setDescription(""); setPrice(""); setCostPrice(""); setStock(""); setCategory("bebidas"); setImageFile(null); setImagePreview(null);
     setDialogOpen(true);
   }
 
   function openEdit(p: Product) {
-    setEditing(p); setTitle(p.title); setDescription(p.description || ""); setPrice(p.price.toString()); setCostPrice(p.cost_price?.toString() || "0"); setStock((p as any).stock?.toString() || "0");
+    setEditing(p); setTitle(p.title); setDescription(p.description || ""); setPrice(p.price.toString()); setCostPrice(p.cost_price?.toString() || "0"); setStock((p as any).stock?.toString() || "0"); setCategory(p.category || "bebidas");
     setImageFile(null); setImagePreview(p.image_url);
     setDialogOpen(true);
   }
@@ -71,11 +79,11 @@ export default function AdminProducts() {
         image_url = urlData.publicUrl;
       }
       if (editing) {
-        const { error } = await supabase.from("products").update({ title, description, price: parseFloat(price), cost_price: parseFloat(costPrice || "0"), stock: parseInt(stock || "0"), image_url } as any).eq("id", editing.id);
+        const { error } = await supabase.from("products").update({ title, description, price: parseFloat(price), cost_price: parseFloat(costPrice || "0"), stock: parseInt(stock || "0"), category, image_url } as any).eq("id", editing.id);
         if (error) throw error;
         toast.success("Produto atualizado");
       } else {
-        const { error } = await supabase.from("products").insert({ title, description, price: parseFloat(price), cost_price: parseFloat(costPrice || "0"), stock: parseInt(stock || "0"), image_url } as any);
+        const { error } = await supabase.from("products").insert({ title, description, price: parseFloat(price), cost_price: parseFloat(costPrice || "0"), stock: parseInt(stock || "0"), category, image_url } as any);
         if (error) throw error;
         toast.success("Produto adicionado");
       }
@@ -134,6 +142,19 @@ export default function AdminProducts() {
                   <Label className="text-xs font-medium">Estoque</Label>
                   <Input type="number" step="1" value={stock} onChange={e => setStock(e.target.value)} placeholder="0" className="mt-1" />
                 </div>
+              </div>
+              <div>
+                <Label className="text-xs font-medium">Categoria</Label>
+                <Select value={category} onValueChange={setCategory}>
+                  <SelectTrigger className="mt-1">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {CATEGORIES.map(c => (
+                      <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div>
                 <Label className="text-xs font-medium">Imagem</Label>

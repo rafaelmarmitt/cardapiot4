@@ -46,6 +46,7 @@ export type Database = {
       }
       products: {
         Row: {
+          category: string
           cost_price: number
           created_at: string
           description: string | null
@@ -57,6 +58,7 @@ export type Database = {
           visible: boolean
         }
         Insert: {
+          category?: string
           cost_price?: number
           created_at?: string
           description?: string | null
@@ -68,6 +70,7 @@ export type Database = {
           visible?: boolean
         }
         Update: {
+          category?: string
           cost_price?: number
           created_at?: string
           description?: string | null

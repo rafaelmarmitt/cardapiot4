@@ -55,7 +55,7 @@ export default function AdminProducts() {
   }
 
   function openEdit(p: Product) {
-    setEditing(p); setTitle(p.title); setDescription(p.description || ""); setPrice(p.price.toString()); setCostPrice(p.cost_price?.toString() || "0"); setStock((p as any).stock?.toString() || "0");
+    setEditing(p); setTitle(p.title); setDescription(p.description || ""); setPrice(p.price.toString()); setCostPrice(p.cost_price?.toString() || "0"); setStock((p as any).stock?.toString() || "0"); setCategory(p.category || "bebidas");
     setImageFile(null); setImagePreview(p.image_url);
     setDialogOpen(true);
   }

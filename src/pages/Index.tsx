@@ -13,6 +13,7 @@ interface Product {
   image_url: string | null;
   stock: number;
   visible: boolean;
+  category: string;
 }
 
 export default function Index() {

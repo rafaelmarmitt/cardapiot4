@@ -50,7 +50,7 @@ export default function AdminProducts() {
   useEffect(() => { fetchProducts(); }, []);
 
   function openCreate() {
-    setEditing(null); setTitle(""); setDescription(""); setPrice(""); setCostPrice(""); setStock(""); setImageFile(null); setImagePreview(null);
+    setEditing(null); setTitle(""); setDescription(""); setPrice(""); setCostPrice(""); setStock(""); setCategory("bebidas"); setImageFile(null); setImagePreview(null);
     setDialogOpen(true);
   }
 

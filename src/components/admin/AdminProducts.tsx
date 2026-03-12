@@ -79,11 +79,11 @@ export default function AdminProducts() {
         image_url = urlData.publicUrl;
       }
       if (editing) {
-        const { error } = await supabase.from("products").update({ title, description, price: parseFloat(price), cost_price: parseFloat(costPrice || "0"), stock: parseInt(stock || "0"), image_url } as any).eq("id", editing.id);
+        const { error } = await supabase.from("products").update({ title, description, price: parseFloat(price), cost_price: parseFloat(costPrice || "0"), stock: parseInt(stock || "0"), category, image_url } as any).eq("id", editing.id);
         if (error) throw error;
         toast.success("Produto atualizado");
       } else {
-        const { error } = await supabase.from("products").insert({ title, description, price: parseFloat(price), cost_price: parseFloat(costPrice || "0"), stock: parseInt(stock || "0"), image_url } as any);
+        const { error } = await supabase.from("products").insert({ title, description, price: parseFloat(price), cost_price: parseFloat(costPrice || "0"), stock: parseInt(stock || "0"), category, image_url } as any);
         if (error) throw error;
         toast.success("Produto adicionado");
       }

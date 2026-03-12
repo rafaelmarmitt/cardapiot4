@@ -71,12 +71,12 @@ export default function Index() {
           </div>
         ) : (
           <div className="space-y-6">
-            {/* Bebidas */}
-            {products.some(p => p.category === "bebidas") && (
+            {/* Comidas */}
+            {products.some(p => p.category === "comidas") && (
               <section>
-                <h3 className="font-display text-base font-semibold text-foreground mb-3">🍺 Bebidas</h3>
+                <h3 className="font-display text-base font-semibold text-foreground mb-3">🍔 Comidas</h3>
                 <div className="grid grid-cols-2 gap-3">
-                  {products.filter(p => p.category === "bebidas").map((p, i) => (
+                  {products.filter(p => p.category === "comidas").map((p, i) => (
                     <div key={p.id} style={{ animationDelay: `${i * 50}ms` }}>
                       <ProductCard {...p} />
                     </div>
@@ -84,12 +84,25 @@ export default function Index() {
                 </div>
               </section>
             )}
-            {/* Comidas */}
-            {products.some(p => p.category === "comidas") && (
+            {/* Combos */}
+            {products.some(p => p.category === "combos") && (
               <section>
-                <h3 className="font-display text-base font-semibold text-foreground mb-3">🍔 Comidas</h3>
+                <h3 className="font-display text-base font-semibold text-foreground mb-3">🎯 Combos</h3>
                 <div className="grid grid-cols-2 gap-3">
-                  {products.filter(p => p.category === "comidas").map((p, i) => (
+                  {products.filter(p => p.category === "combos").map((p, i) => (
+                    <div key={p.id} style={{ animationDelay: `${i * 50}ms` }}>
+                      <ProductCard {...p} />
+                    </div>
+                  ))}
+                </div>
+              </section>
+            )}
+            {/* Bebidas */}
+            {products.some(p => p.category === "bebidas") && (
+              <section>
+                <h3 className="font-display text-base font-semibold text-foreground mb-3">🍺 Bebidas</h3>
+                <div className="grid grid-cols-2 gap-3">
+                  {products.filter(p => p.category === "bebidas").map((p, i) => (
                     <div key={p.id} style={{ animationDelay: `${i * 50}ms` }}>
                       <ProductCard {...p} />
                     </div>

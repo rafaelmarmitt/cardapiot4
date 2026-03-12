@@ -21,8 +21,9 @@ interface Product {
 }
 
 const CATEGORIES = [
-  { value: "bebidas", label: "Bebidas" },
   { value: "comidas", label: "Comidas" },
+  { value: "bebidas", label: "Bebidas" },
+  { value: "combos", label: "Combos" },
 ];
 
 export default function AdminProducts() {

@@ -45,21 +45,19 @@ export default function ProductCard({ id, title, description, price, image_url, 
           </div>
         )}
       </div>
-      <div className="p-3">
+      <div className="p-3 flex flex-col gap-1.5">
         <h3 className="font-display font-semibold text-sm truncate">{title}</h3>
-        {description && <p className="text-muted-foreground text-xs mt-0.5 line-clamp-2">{description}</p>}
-        <div className="flex items-center justify-between mt-2.5">
-          <span className="font-display font-bold text-base text-foreground">
-            R${price.toFixed(2).replace('.', ',')}
-          </span>
-          {outOfStock ? (
-            <span className="text-xs font-medium text-destructive">Esgotado</span>
-          ) : (
-            <Button variant="accent" size="sm" className="h-8 px-3 text-xs rounded-lg" onClick={handleAdd}>
-              <Plus className="h-3.5 w-3.5 mr-1" /> Adicionar
-            </Button>
-          )}
-        </div>
+        {description && <p className="text-muted-foreground text-xs line-clamp-2">{description}</p>}
+        <span className="font-display font-bold text-base text-foreground">
+          R${price.toFixed(2).replace('.', ',')}
+        </span>
+        {outOfStock ? (
+          <span className="text-xs font-medium text-destructive">Esgotado</span>
+        ) : (
+          <Button variant="accent" size="sm" className="w-full h-8 text-xs rounded-lg mt-0.5" onClick={handleAdd}>
+            <Plus className="h-3.5 w-3.5 mr-1" /> Adicionar
+          </Button>
+        )}
       </div>
     </div>
   );

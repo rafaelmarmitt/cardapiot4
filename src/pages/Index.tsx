@@ -70,12 +70,33 @@ export default function Index() {
             <p className="text-muted-foreground/60 text-sm mt-1">Volte em breve!</p>
           </div>
         ) : (
-          <div className="grid grid-cols-2 gap-3">
-            {products.map((p, i) => (
-              <div key={p.id} style={{ animationDelay: `${i * 50}ms` }}>
-                <ProductCard {...p} />
-              </div>
-            ))}
+          <div className="space-y-6">
+            {/* Bebidas */}
+            {products.some(p => p.category === "bebidas") && (
+              <section>
+                <h3 className="font-display text-base font-semibold text-foreground mb-3">🍺 Bebidas</h3>
+                <div className="grid grid-cols-2 gap-3">
+                  {products.filter(p => p.category === "bebidas").map((p, i) => (
+                    <div key={p.id} style={{ animationDelay: `${i * 50}ms` }}>
+                      <ProductCard {...p} />
+                    </div>
+                  ))}
+                </div>
+              </section>
+            )}
+            {/* Comidas */}
+            {products.some(p => p.category === "comidas") && (
+              <section>
+                <h3 className="font-display text-base font-semibold text-foreground mb-3">🍔 Comidas</h3>
+                <div className="grid grid-cols-2 gap-3">
+                  {products.filter(p => p.category === "comidas").map((p, i) => (
+                    <div key={p.id} style={{ animationDelay: `${i * 50}ms` }}>
+                      <ProductCard {...p} />
+                    </div>
+                  ))}
+                </div>
+              </section>
+            )}
           </div>
         )}
       </main>

@@ -144,6 +144,19 @@ export default function AdminProducts() {
                 </div>
               </div>
               <div>
+                <Label className="text-xs font-medium">Categoria</Label>
+                <Select value={category} onValueChange={setCategory}>
+                  <SelectTrigger className="mt-1">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {CATEGORIES.map(c => (
+                      <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
                 <Label className="text-xs font-medium">Imagem</Label>
                 <input type="file" accept="image/*" ref={fileRef} className="hidden" onChange={handleFileChange} />
                 <div

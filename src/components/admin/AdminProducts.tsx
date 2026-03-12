@@ -16,7 +16,13 @@ interface Product {
   price: number;
   cost_price: number;
   image_url: string | null;
+  category: string;
 }
+
+const CATEGORIES = [
+  { value: "bebidas", label: "Bebidas" },
+  { value: "comidas", label: "Comidas" },
+];
 
 export default function AdminProducts() {
   const [products, setProducts] = useState<Product[]>([]);

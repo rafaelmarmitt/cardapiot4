@@ -49,15 +49,14 @@ Deno.serve(async (req) => {
     const payer: Record<string, unknown> = { ...formData.payer };
 
     if (isPix) {
-      // PIX requires email, first_name, and identification
       if (!payer.email) {
         throw new Error("E-mail do pagador é obrigatório para pagamento via PIX.");
       }
       if (!payer.first_name) {
         payer.first_name = (payer.email as string).split("@")[0];
       }
-      if (!payer.identification || !(payer.identification as Record<string, unknown>).number) {
-        throw new Error("CPF do pagador é obrigatório para pagamento via PIX. Preencha o campo de documento no formulário.");
+      if (!payer.last_name) {
+        payer.last_name = "Cliente";
       }
     }
 

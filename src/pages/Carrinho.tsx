@@ -83,13 +83,8 @@ export default function Carrinho() {
                 <span className="font-display font-semibold">Total</span>
                 <span className="font-display font-bold text-xl">R${total.toFixed(2).replace('.', ',')}</span>
               </div>
-              <Button variant="accent" className="w-full h-12 text-base font-semibold" onClick={handleCheckout} disabled={loading}>
-                {loading ? (
-                  <span className="flex items-center gap-2">
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    Processando...
-                  </span>
-                ) : "Finalizar Pedido"}
+              <Button variant="accent" className="w-full h-12 text-base font-semibold" onClick={handleCheckout}>
+                Finalizar Pedido
               </Button>
             </div>
           </div>

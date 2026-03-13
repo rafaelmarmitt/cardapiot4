@@ -311,7 +311,12 @@ export default function Checkout() {
         ) : (
           <div className="animate-fade-up">
             <Payment
-              initialization={{ amount: total }}
+              initialization={{
+                amount: total,
+                payer: {
+                  email: user?.email || "",
+                },
+              }}
               customization={customization}
               onSubmit={onSubmit}
               onReady={onReady}

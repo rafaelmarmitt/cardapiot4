@@ -58,6 +58,17 @@ Deno.serve(async (req) => {
       if (!payer.last_name) {
         payer.last_name = "Cliente";
       }
+
+      // CPF é obrigatório para PIX
+      const identification = payer.identification as Record<string, string> | undefined;
+      if (!identification?.number) {
+        throw new Error("CPF do pagador é obrigatório para pagamento via PIX. Preencha o campo de documento no formulário.");
+      }
+      // Garantir tipo CPF
+      payer.identification = {
+        type: identification.type || "CPF",
+        number: identification.number.replace(/\D/g, ""),
+      };
     }
 
     // Build MP payment payload

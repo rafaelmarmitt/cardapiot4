@@ -18,8 +18,7 @@ export default function Carrinho() {
       return;
     }
     if (items.length === 0) return;
-    // TODO: integrar pagamento
-    toast.info("Integração de pagamento pendente.");
+    navigate("/checkout");
   }
 
   return (

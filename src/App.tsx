@@ -10,7 +10,7 @@ import Index from "./pages/Index";
 import Login from "./pages/Login";
 import Cadastro from "./pages/Cadastro";
 import Carrinho from "./pages/Carrinho";
-
+import Checkout from "./pages/Checkout";
 import MeusPedidos from "./pages/MeusPedidos";
 import Admin from "./pages/Admin";
 import NotFound from "./pages/NotFound";
@@ -30,7 +30,7 @@ const App = () => (
               <Route path="/login" element={<Login />} />
               <Route path="/cadastro" element={<Cadastro />} />
               <Route path="/carrinho" element={<Carrinho />} />
-              {/* Checkout route - pending payment integration */}
+              <Route path="/checkout" element={<ProtectedRoute><Checkout /></ProtectedRoute>} />
               <Route path="/meus-pedidos" element={<ProtectedRoute><MeusPedidos /></ProtectedRoute>} />
               <Route path="/admin" element={<AdminRoute><Admin /></AdminRoute>} />
               <Route path="*" element={<NotFound />} />

@@ -64,6 +64,19 @@ export default function Checkout() {
     setTimeout(() => setCopied(false), 3000);
   }, [pixData]);
 
+  const customization = {
+    paymentMethods: {
+      creditCard: "all" as const,
+      debitCard: "all" as const,
+      ticket: "all" as const,
+      bankTransfer: "all" as const,
+      maxInstallments: 12,
+    },
+    visual: {
+      style: { theme: "default" as const },
+    },
+  };
+
   const onSubmit = useCallback(
     async (formData: any) => {
       if (!user || items.length === 0) return;

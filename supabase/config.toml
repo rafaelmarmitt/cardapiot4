@@ -1,12 +1,6 @@
 project_id = "taypghukdjklpcjbwmzh"
 
-[functions.create-payment]
-verify_jwt = false
-
-[functions.mercadopago-webhook]
-verify_jwt = false
-
-[functions.create-mp-preference]
+[functions.process-mp-payment]
 verify_jwt = false
 
 [functions.mp-webhook]

@@ -109,36 +109,45 @@ export default function Checkout() {
     async (formData: any) => {
       if (!user || items.length === 0) return;
 
+      const sourceFormData = formData?.formData || formData;
+      const isPixPayment = sourceFormData?.payment_method_id === "pix";
+
       const normalizedEmail = payerEmail.trim().toLowerCase();
       const normalizedFirstName = payerFirstName.trim();
       const normalizedLastName = payerLastName.trim();
       const normalizedCpf = payerCpf.replace(/\D/g, "");
 
-      if (!normalizedEmail || !normalizedFirstName || !normalizedCpf) {
+      if (isPixPayment && (!normalizedEmail || !normalizedFirstName || !normalizedCpf)) {
         toast.error("Para PIX, preencha nome, e-mail e CPF do pagador.");
         return;
       }
 
-      if (normalizedCpf.length !== 11) {
+      if (isPixPayment && normalizedCpf.length !== 11) {
         toast.error("CPF inválido. Digite os 11 números do CPF.");
         return;
       }
 
       setStatus("processing");
 
-      const normalizedPaymentData = {
-        ...formData,
+      const enrichedFormData = {
+        ...sourceFormData,
         payer: {
-          ...(formData?.payer || {}),
+          ...(sourceFormData?.payer || {}),
           email: normalizedEmail,
           first_name: normalizedFirstName,
           last_name: normalizedLastName || "Cliente",
-          identification: {
-            type: "CPF",
-            number: normalizedCpf,
-          },
+          identification: isPixPayment
+            ? {
+                type: "CPF",
+                number: normalizedCpf,
+              }
+            : sourceFormData?.payer?.identification,
         },
       };
+
+      const normalizedPaymentData = formData?.formData
+        ? { ...formData, formData: enrichedFormData }
+        : enrichedFormData;
 
       try {
         const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;

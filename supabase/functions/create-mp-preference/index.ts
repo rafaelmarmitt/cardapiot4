@@ -1,116 +1,99 @@
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
+// Configuração do CORS para permitir que o site (Lovable) converse com esta função
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-Deno.serve(async (req) => {
+serve(async (req) => {
+  // Responde ao 'preflight' do navegador
   if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
+    return new Response("ok", { headers: corsHeaders });
   }
 
   try {
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader) throw new Error("Missing authorization");
+    // 1. Pega os dados enviados pelo frontend
+    const body = await req.json();
+    const { items, total, user_id } = body;
 
-    const supabase = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_PUBLISHABLE_KEY")!,
-      { global: { headers: { Authorization: authHeader } } }
-    );
-
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
-    if (userError || !user) throw new Error("Unauthorized");
-
-    const { items, total } = await req.json();
-
-    if (!items || !Array.isArray(items) || items.length === 0) {
-      throw new Error("Items required");
+    // 2. Pega o Token do Mercado Pago configurado no Supabase
+    const token = Deno.env.get("MP_ACCESS_TOKEN");
+    if (!token) {
+      throw new Error("O Token do Mercado Pago (MP_ACCESS_TOKEN) não foi encontrado nas configurações do Supabase.");
     }
 
-    // Generate order number
-    const { data: orderNum } = await supabase.rpc("generate_order_number");
-    const order_number = orderNum || Math.floor(Math.random() * 999999 + 1).toString().padStart(6, "0");
+    // 3. Conecta no banco de dados para criar o pedido (opcional, mas recomendado)
+    const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
+    const supabaseKey = Deno.env.get("SUPABASE_ANON_KEY") || "";
+    const supabaseClient = createClient(supabaseUrl, supabaseKey);
 
-    // Create order in DB with status pending
-    const { data: orderData, error: orderError } = await supabase
+    const order_number = `PEDIDO-${Date.now()}`;
+
+    // Insere na tabela orders (conforme sua estrutura)
+    const { data: orderData, error: dbError } = await supabaseClient
       .from("orders")
       .insert({
-        user_id: user.id,
-        order_number,
-        total,
+        user_id: user_id || null,
+        order_number: order_number,
         status: "pending",
-        items: items.map((i: any) => ({
-          id: i.id,
-          title: i.title,
-          price: i.price,
-          quantity: i.quantity,
-        })),
+        total: Number(total),
+        items: items,
       })
       .select("id")
       .single();
 
-    if (orderError) throw orderError;
+    if (dbError) throw new Error(`Erro ao salvar no banco: ${dbError.message}`);
 
-    const orderId = orderData.id;
+    // 4. Prepara os itens para o formato exato que o Mercado Pago exige
+    const mpItems = items.map((item: any) => ({
+      title: item.title || item.name || "Produto da Loja",
+      quantity: Number(item.quantity) || 1,
+      currency_id: "BRL",
+      unit_price: Number(item.price),
+    }));
 
-    // Create Mercado Pago preference
-    const MP_TOKEN = Deno.env.get("MERCADOPAGO_ACCESS_TOKEN");
-    if (!MP_TOKEN) throw new Error("Mercado Pago not configured");
-
-    const siteUrl = Deno.env.get("SITE_URL") || "https://cardapiot4.lovable.app";
-    const webhookUrl = `${Deno.env.get("SUPABASE_URL")}/functions/v1/mp-webhook`;
-
+    // 5. Monta a requisição para o Mercado Pago
     const mpPayload = {
-      items: items.map((i: any) => ({
-        id: i.id,
-        title: i.title,
-        quantity: Number(i.quantity),
-        unit_price: Number(i.price),
-        currency_id: "BRL",
-      })),
-      external_reference: orderId,
-      back_urls: {
-        success: `${siteUrl}/meus-pedidos?status=success`,
-        failure: `${siteUrl}/meus-pedidos?status=failure`,
-        pending: `${siteUrl}/meus-pedidos?status=pending`,
-      },
+      items: mpItems,
+      external_reference: orderData.id, // Liga o pagamento ao ID do pedido
       auto_return: "approved",
-      notification_url: webhookUrl,
-      statement_descriptor: "T4 Bar",
+      // Quando tiver o domínio oficial do seu site, troque estas URLs:
+      back_urls: {
+        success: "https://google.com",
+        failure: "https://google.com",
+        pending: "https://google.com",
+      },
     };
 
-    const mpRes = await fetch("https://api.mercadopago.com/checkout/preferences", {
+    // 6. Chama a API do Mercado Pago
+    const mpResponse = await fetch("https://api.mercadopago.com/checkout/preferences", {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${MP_TOKEN}`,
+        Authorization: `Bearer ${token.trim()}`, // O trim() remove espaços em branco acidentais no token
         "Content-Type": "application/json",
       },
       body: JSON.stringify(mpPayload),
     });
 
-    const mpData = await mpRes.json();
+    const mpData = await mpResponse.json();
 
-    if (!mpRes.ok) {
-      console.error("MP error:", JSON.stringify(mpData));
-      throw new Error(mpData.message || "Mercado Pago error");
+    // Se o Mercado Pago recusar, agora veremos o erro exato!
+    if (!mpResponse.ok) {
+      throw new Error(`O Mercado Pago recusou: ${JSON.stringify(mpData)}`);
     }
 
-    return new Response(
-      JSON.stringify({
-        init_point: mpData.init_point,
-        order_number,
-        order_id: orderId,
-      }),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
-  } catch (err: any) {
-    console.error("Error:", err);
-    return new Response(
-      JSON.stringify({ error: err.message }),
-      { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+    // Retorna o link de pagamento para o site
+    return new Response(JSON.stringify({ init_point: mpData.init_point }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      status: 200,
+    });
+  } catch (error) {
+    // Retorna o erro real para podermos debugar
+    return new Response(JSON.stringify({ error: error.message }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      status: 400,
+    });
   }
 });

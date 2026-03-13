@@ -26,14 +26,40 @@ interface PixData {
 
 export default function Checkout() {
   const { items, total, clearCart } = useCart();
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const navigate = useNavigate();
   const [status, setStatus] = useState<PaymentStatus>("idle");
   const [orderNumber, setOrderNumber] = useState<string | null>(null);
   const [orderId, setOrderId] = useState<string | null>(null);
   const [pixData, setPixData] = useState<PixData | null>(null);
   const [copied, setCopied] = useState(false);
+  const [payerEmail, setPayerEmail] = useState("");
+  const [payerFirstName, setPayerFirstName] = useState("");
+  const [payerLastName, setPayerLastName] = useState("");
+  const [payerCpf, setPayerCpf] = useState("");
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  useEffect(() => {
+    if (!user) return;
+
+    setPayerEmail((prev) => prev || user.email || "");
+
+    if (!payerFirstName && !payerLastName) {
+      const fullName = (profile?.name || user.user_metadata?.name || "").trim();
+      if (fullName) {
+        const [first, ...rest] = fullName.split(/\s+/);
+        setPayerFirstName(first || "");
+        setPayerLastName(rest.join(" ") || "Cliente");
+      }
+    }
+  }, [user, profile, payerFirstName, payerLastName]);
+
+  const formattedCpf = payerCpf
+    .replace(/\D/g, "")
+    .slice(0, 11)
+    .replace(/(\d{3})(\d)/, "$1.$2")
+    .replace(/(\d{3})(\d)/, "$1.$2")
+    .replace(/(\d{3})(\d{1,2})$/, "$1-$2");
 
   // Poll order status for PIX
   useEffect(() => {

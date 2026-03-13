@@ -1,23 +1,58 @@
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Minus, Plus, Trash2, ArrowLeft } from "lucide-react";
+import { Minus, Plus, Trash2, ArrowLeft, Loader2 } from "lucide-react";
 import { useCart } from "@/contexts/CartContext";
 import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import AppHeader from "@/components/AppHeader";
 import { toast } from "sonner";
 
 export default function Carrinho() {
-  const { items, removeItem, updateQuantity, total } = useCart();
+  const { items, removeItem, updateQuantity, total, clearCart } = useCart();
   const { user } = useAuth();
   const navigate = useNavigate();
+  const [loading, setLoading] = useState(false);
 
-  function handleCheckout() {
+  async function handleCheckout() {
     if (!user) {
       toast.error("Faça login para finalizar o pedido");
       navigate("/login");
       return;
     }
-    navigate("/checkout");
+    if (items.length === 0) return;
+
+    setLoading(true);
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData?.session?.access_token;
+
+      const res = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-mp-preference`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+            apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+          },
+          body: JSON.stringify({
+            items: items.map(i => ({ id: i.id, title: i.title, price: i.price, quantity: i.quantity })),
+            total,
+          }),
+        }
+      );
+
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.error || "Erro ao criar pagamento");
+
+      clearCart();
+      // Redirect to Mercado Pago checkout
+      window.location.href = result.init_point;
+    } catch (err: any) {
+      toast.error(err.message || "Erro ao processar pagamento");
+      setLoading(false);
+    }
   }
 
   return (
@@ -81,8 +116,13 @@ export default function Carrinho() {
                 <span className="font-display font-semibold">Total</span>
                 <span className="font-display font-bold text-xl">R${total.toFixed(2).replace('.', ',')}</span>
               </div>
-              <Button variant="accent" className="w-full h-12 text-base font-semibold" onClick={handleCheckout}>
-                Finalizar Pedido
+              <Button variant="accent" className="w-full h-12 text-base font-semibold" onClick={handleCheckout} disabled={loading}>
+                {loading ? (
+                  <span className="flex items-center gap-2">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Processando...
+                  </span>
+                ) : "Finalizar Pedido"}
               </Button>
             </div>
           </div>

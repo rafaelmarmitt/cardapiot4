@@ -2,3 +2,6 @@ project_id = "taypghukdjklpcjbwmzh"
 
 [functions.process-payment]
 verify_jwt = false
+
+[functions.mp-webhook]
+verify_jwt = false

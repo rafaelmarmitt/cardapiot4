@@ -1,20 +1,26 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, CheckCircle, XCircle, Clock, Loader2 } from "lucide-react";
+import { ArrowLeft, CheckCircle, XCircle, Loader2, Copy, Check } from "lucide-react";
 import { initMercadoPago, Payment } from "@mercadopago/sdk-react";
 import { useCart } from "@/contexts/CartContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import AppHeader from "@/components/AppHeader";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
-// Initialize Mercado Pago SDK
 const mpPublicKey = import.meta.env.VITE_MP_PUBLIC_KEY;
 if (mpPublicKey) {
   initMercadoPago(mpPublicKey, { locale: "pt-BR" });
 }
 
-type PaymentStatus = "idle" | "processing" | "approved" | "in_process" | "rejected";
+type PaymentStatus = "idle" | "processing" | "approved" | "pix_pending" | "rejected";
+
+interface PixData {
+  qr_code: string;
+  qr_code_base64: string;
+  ticket_url?: string;
+}
 
 export default function Checkout() {
   const { items, total, clearCart } = useCart();
@@ -22,21 +28,41 @@ export default function Checkout() {
   const navigate = useNavigate();
   const [status, setStatus] = useState<PaymentStatus>("idle");
   const [orderNumber, setOrderNumber] = useState<string | null>(null);
+  const [orderId, setOrderId] = useState<string | null>(null);
+  const [pixData, setPixData] = useState<PixData | null>(null);
+  const [copied, setCopied] = useState(false);
+  const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const initialization = { amount: total };
+  // Poll order status for PIX
+  useEffect(() => {
+    if (status !== "pix_pending" || !orderId) return;
 
-  const customization = {
-    paymentMethods: {
-      creditCard: "all" as const,
-      debitCard: "all" as const,
-      ticket: "all" as const,
-      bankTransfer: "all" as const,
-      maxInstallments: 12,
-    },
-    visual: {
-      style: { theme: "default" as const },
-    },
-  };
+    pollingRef.current = setInterval(async () => {
+      const { data } = await supabase
+        .from("orders")
+        .select("status")
+        .eq("id", orderId)
+        .single();
+
+      if (data?.status === "approved") {
+        setStatus("approved");
+        clearCart();
+        toast.success("Pagamento PIX confirmado!");
+      }
+    }, 5000);
+
+    return () => {
+      if (pollingRef.current) clearInterval(pollingRef.current);
+    };
+  }, [status, orderId, clearCart]);
+
+  const handleCopyPix = useCallback(() => {
+    if (!pixData?.qr_code) return;
+    navigator.clipboard.writeText(pixData.qr_code);
+    setCopied(true);
+    toast.success("Código PIX copiado!");
+    setTimeout(() => setCopied(false), 3000);
+  }, [pixData]);
 
   const onSubmit = useCallback(
     async (formData: any) => {
@@ -73,15 +99,25 @@ export default function Checkout() {
         if (!res.ok) throw new Error(result.error || "Erro ao processar pagamento");
 
         setOrderNumber(result.order_number || null);
+        setOrderId(result.order_id || null);
 
         if (result.status === "approved") {
           setStatus("approved");
           clearCart();
           toast.success("Pagamento aprovado!");
-        } else if (result.status === "in_process" || result.status === "pending") {
-          setStatus("in_process");
+        } else if (result.pix_qr_code) {
+          // PIX payment - show QR code
+          setPixData({
+            qr_code: result.pix_qr_code,
+            qr_code_base64: result.pix_qr_code_base64,
+            ticket_url: result.pix_ticket_url,
+          });
+          setStatus("pix_pending");
           clearCart();
-          toast.info("Pagamento em análise. Você será notificado.");
+        } else if (result.status === "in_process" || result.status === "pending") {
+          setPixData(null);
+          setStatus("pix_pending");
+          clearCart();
         } else {
           setStatus("rejected");
           toast.error(result.status_detail || "Pagamento recusado. Tente outro método.");
@@ -101,7 +137,7 @@ export default function Checkout() {
 
   const onReady = useCallback(() => {}, []);
 
-  // --- Result Screens ---
+  // --- Approved ---
   if (status === "approved") {
     return (
       <div className="min-h-screen bg-background">
@@ -129,25 +165,59 @@ export default function Checkout() {
     );
   }
 
-  if (status === "in_process") {
+  // --- PIX Pending with QR Code ---
+  if (status === "pix_pending") {
     return (
       <div className="min-h-screen bg-background">
         <AppHeader />
         <main className="container px-4 py-6 max-w-lg mx-auto">
           <div className="bg-card rounded-2xl p-6 border border-border animate-scale-in text-center">
-            <div className="w-14 h-14 rounded-full bg-yellow-500/10 flex items-center justify-center mx-auto mb-4">
-              <Clock className="h-7 w-7 text-yellow-500" />
+            <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
+              <Loader2 className="h-7 w-7 text-primary animate-spin" />
             </div>
-            <h1 className="font-display text-2xl font-bold">Pagamento em Análise</h1>
-            <p className="text-muted-foreground mt-2">Você será notificado quando for aprovado.</p>
+            <h1 className="font-display text-2xl font-bold">Pague com PIX</h1>
+            <p className="text-muted-foreground mt-2">Escaneie o QR Code ou copie o código abaixo</p>
+
             {orderNumber && (
-              <div className="bg-secondary rounded-xl p-4 my-5">
-                <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium">Número do Pedido</p>
-                <p className="font-display text-3xl font-bold text-foreground mt-1 tracking-wider">{orderNumber}</p>
+              <div className="bg-secondary rounded-xl p-3 my-4">
+                <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium">Pedido</p>
+                <p className="font-display text-xl font-bold text-foreground mt-1 tracking-wider">{orderNumber}</p>
               </div>
             )}
+
+            {pixData?.qr_code_base64 && (
+              <div className="my-5 flex justify-center">
+                <img
+                  src={`data:image/png;base64,${pixData.qr_code_base64}`}
+                  alt="QR Code PIX"
+                  className="w-56 h-56 rounded-xl border border-border"
+                />
+              </div>
+            )}
+
+            {pixData?.qr_code && (
+              <div className="my-4">
+                <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium mb-2">Código Copia e Cola</p>
+                <div className="bg-secondary rounded-xl p-3 break-all text-xs text-foreground font-mono leading-relaxed max-h-24 overflow-y-auto">
+                  {pixData.qr_code}
+                </div>
+                <Button
+                  variant="accent"
+                  className="w-full mt-3 gap-2"
+                  onClick={handleCopyPix}
+                >
+                  {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                  {copied ? "Copiado!" : "Copiar Código PIX"}
+                </Button>
+              </div>
+            )}
+
+            <p className="text-sm text-muted-foreground mt-4 animate-pulse">
+              Aguardando confirmação do pagamento...
+            </p>
+
             <div className="flex gap-2 mt-5">
-              <Button variant="accent" className="flex-1" onClick={() => navigate("/meus-pedidos")}>Ver Pedidos</Button>
+              <Button variant="outline" className="flex-1" onClick={() => navigate("/meus-pedidos")}>Ver Pedidos</Button>
               <Button variant="outline" className="flex-1" onClick={() => navigate("/")}>Cardápio</Button>
             </div>
           </div>
@@ -156,6 +226,7 @@ export default function Checkout() {
     );
   }
 
+  // --- Rejected ---
   if (status === "rejected") {
     return (
       <div className="min-h-screen bg-background">
@@ -199,7 +270,6 @@ export default function Checkout() {
           <h1 className="font-display text-xl font-bold">Pagamento</h1>
         </div>
 
-        {/* Order Summary */}
         <div className="bg-card rounded-xl p-4 border border-border animate-fade-up mb-5">
           <h2 className="font-display font-semibold text-sm mb-3 text-muted-foreground uppercase tracking-wider">Resumo</h2>
           {items.map((item) => (
@@ -214,7 +284,6 @@ export default function Checkout() {
           </div>
         </div>
 
-        {/* Payment Brick */}
         {status === "processing" ? (
           <div className="flex flex-col items-center justify-center py-16">
             <Loader2 className="h-8 w-8 animate-spin text-primary mb-3" />
@@ -223,7 +292,7 @@ export default function Checkout() {
         ) : (
           <div className="animate-fade-up">
             <Payment
-              initialization={initialization}
+              initialization={{ amount: total }}
               customization={customization}
               onSubmit={onSubmit}
               onReady={onReady}

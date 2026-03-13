@@ -42,16 +42,24 @@ Deno.serve(async (req) => {
 
     if (dbError) throw new Error(`Erro ao salvar pedido: ${dbError.message}`);
 
-    // Build MP payment payload from Brick data
+    // The Payment Brick sends data nested under formData
+    const formData = paymentData.formData || paymentData;
+    const paymentType = paymentData.paymentType || "";
+
+    // Build MP payment payload
     const mpPayload: Record<string, unknown> = {
       transaction_amount: Number(total),
-      token: paymentData.token,
-      installments: paymentData.installments || 1,
-      payment_method_id: paymentData.payment_method_id,
-      issuer_id: paymentData.issuer_id,
-      payer: paymentData.payer || {},
+      payment_method_id: formData.payment_method_id,
+      payer: formData.payer || {},
       external_reference: orderData.id,
     };
+
+    // Credit/debit card specific fields
+    if (formData.token) {
+      mpPayload.token = formData.token;
+      mpPayload.installments = formData.installments || 1;
+      mpPayload.issuer_id = formData.issuer_id;
+    }
 
     // Call Mercado Pago Payments API
     const idempotencyKey = crypto.randomUUID();
@@ -92,18 +100,25 @@ Deno.serve(async (req) => {
       .update({ status: newStatus })
       .eq("id", orderData.id);
 
-    return new Response(
-      JSON.stringify({
-        status: mpData.status,
-        status_detail: mpData.status_detail,
-        order_number: orderNumber,
-        order_id: orderData.id,
-      }),
-      {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 200,
-      }
-    );
+    // Build response with PIX data if applicable
+    const response: Record<string, unknown> = {
+      status: mpData.status,
+      status_detail: mpData.status_detail,
+      order_number: orderNumber,
+      order_id: orderData.id,
+    };
+
+    // Include PIX QR code data if available
+    if (mpData.point_of_interaction?.transaction_data) {
+      response.pix_qr_code = mpData.point_of_interaction.transaction_data.qr_code;
+      response.pix_qr_code_base64 = mpData.point_of_interaction.transaction_data.qr_code_base64;
+      response.pix_ticket_url = mpData.point_of_interaction.transaction_data.ticket_url;
+    }
+
+    return new Response(JSON.stringify(response), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      status: 200,
+    });
   } catch (error) {
     return new Response(
       JSON.stringify({ error: (error as Error).message }),

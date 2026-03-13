@@ -1,134 +1,130 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { Copy, CheckCircle, ArrowLeft, QrCode, Loader2 } from "lucide-react";
+import { ArrowLeft, CheckCircle, XCircle, Clock, Loader2 } from "lucide-react";
+import { initMercadoPago, Payment } from "@mercadopago/sdk-react";
 import { useCart } from "@/contexts/CartContext";
 import { useAuth } from "@/contexts/AuthContext";
-import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import AppHeader from "@/components/AppHeader";
 import { toast } from "sonner";
+
+// Initialize Mercado Pago SDK with the public key
+const mpPublicKey = import.meta.env.VITE_MP_PUBLIC_KEY;
+if (mpPublicKey) {
+  initMercadoPago(mpPublicKey, { locale: "pt-BR" });
+}
+
+type PaymentStatus = "idle" | "processing" | "approved" | "in_process" | "rejected";
 
 export default function Checkout() {
   const { items, total, clearCart } = useCart();
   const { user } = useAuth();
   const navigate = useNavigate();
+  const [status, setStatus] = useState<PaymentStatus>("idle");
   const [orderNumber, setOrderNumber] = useState<string | null>(null);
-  const [orderTotal, setOrderTotal] = useState<number>(0);
-  const [loading, setLoading] = useState(false);
-  const [copied, setCopied] = useState(false);
-  const [pixCode, setPixCode] = useState<string | null>(null);
-  const [pixQrBase64, setPixQrBase64] = useState<string | null>(null);
 
-  async function handlePlaceOrder() {
-    if (!user || items.length === 0) return;
-    setLoading(true);
-    try {
-      // Generate order number
-      const { data: numData } = await supabase.rpc("generate_order_number");
-      const num = numData || Math.floor(Math.random() * 999999 + 1).toString().padStart(6, "0");
+  const initialization = {
+    amount: total,
+  };
 
-      // Call edge function to create payment + order
-      const { data: sessionData } = await supabase.auth.getSession();
-      const token = sessionData?.session?.access_token;
+  const customization = {
+    paymentMethods: {
+      creditCard: "all" as const,
+      debitCard: "all" as const,
+      ticket: "all" as const,
+      bankTransfer: "all" as const,
+      maxInstallments: 12,
+    },
+    visual: {
+      style: {
+        theme: "default" as const,
+      },
+    },
+  };
 
-      const res = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-payment`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-            apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-          },
-          body: JSON.stringify({
-            items: items.map(i => ({ id: i.id, title: i.title, price: i.price, quantity: i.quantity })),
-            total,
-            order_number: num,
-          }),
+  const onSubmit = useCallback(
+    async (formData: any) => {
+      if (!user || items.length === 0) return;
+      setStatus("processing");
+
+      try {
+        const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+        const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+
+        const res = await fetch(
+          `${supabaseUrl}/functions/v1/process-mp-payment`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              apikey: supabaseKey,
+            },
+            body: JSON.stringify({
+              paymentData: formData,
+              items: items.map((i) => ({
+                id: i.id,
+                title: i.title,
+                price: i.price,
+                quantity: i.quantity,
+              })),
+              total,
+              user_id: user.id,
+            }),
+          }
+        );
+
+        const result = await res.json();
+        if (!res.ok) throw new Error(result.error || "Erro ao processar pagamento");
+
+        setOrderNumber(result.order_number || null);
+
+        if (result.status === "approved") {
+          setStatus("approved");
+          clearCart();
+          toast.success("Pagamento aprovado!");
+        } else if (result.status === "in_process" || result.status === "pending") {
+          setStatus("in_process");
+          clearCart();
+          toast.info("Pagamento em análise. Você será notificado.");
+        } else {
+          setStatus("rejected");
+          toast.error(result.status_detail || "Pagamento recusado. Tente outro método.");
         }
-      );
+      } catch (err: any) {
+        setStatus("rejected");
+        toast.error(err.message || "Erro ao processar pagamento");
+      }
+    },
+    [user, items, total, clearCart]
+  );
 
-      const result = await res.json();
-      if (!res.ok) throw new Error(result.error || "Erro ao criar pagamento");
+  const onError = useCallback((error: any) => {
+    console.error("Payment Brick error:", error);
+    toast.error("Erro no formulário de pagamento.");
+  }, []);
 
-      setOrderNumber(result.order_number);
-      setOrderTotal(total);
-      setPixCode(result.qr_code || null);
-      setPixQrBase64(result.qr_code_base64 || null);
-      clearCart();
-      toast.success("Pedido criado! Escaneie o QR Code ou copie o código PIX.");
-    } catch (err: any) {
-      toast.error(err.message || "Erro ao criar pedido");
-    } finally {
-      setLoading(false);
-    }
-  }
+  const onReady = useCallback(() => {
+    // Brick loaded
+  }, []);
 
-  function copyPix() {
-    if (!pixCode) return;
-    navigator.clipboard.writeText(pixCode);
-    setCopied(true);
-    toast.success("Código PIX copiado!");
-    setTimeout(() => setCopied(false), 2000);
-  }
-
-  if (orderNumber) {
+  // Result screens
+  if (status === "approved") {
     return (
       <div className="min-h-screen bg-background">
         <AppHeader />
         <main className="container px-4 py-6 max-w-lg mx-auto">
           <div className="bg-card rounded-2xl p-6 border border-border animate-scale-in text-center">
-            <div className="w-14 h-14 rounded-full bg-success/10 flex items-center justify-center mx-auto mb-4">
-              <CheckCircle className="h-7 w-7 text-success" />
+            <div className="w-14 h-14 rounded-full bg-green-500/10 flex items-center justify-center mx-auto mb-4">
+              <CheckCircle className="h-7 w-7 text-green-500" />
             </div>
-            <h1 className="font-display text-2xl font-bold">Pedido Criado</h1>
-
-            <div className="bg-secondary rounded-xl p-4 my-5">
-              <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium">Número do Pedido</p>
-              <p className="font-display text-4xl font-bold text-foreground mt-1 tracking-wider">{orderNumber}</p>
-              <p className="font-display text-lg font-bold text-foreground mt-2">R${orderTotal.toFixed(2).replace('.', ',')}</p>
-            </div>
-
-            <div className="bg-secondary rounded-xl p-4 text-left space-y-4">
-              <div className="flex items-center gap-2">
-                <QrCode className="h-5 w-5 text-primary" />
-                <p className="font-display font-semibold text-sm">Pague via PIX</p>
+            <h1 className="font-display text-2xl font-bold">Pagamento Aprovado!</h1>
+            <p className="text-muted-foreground mt-2">Seu pedido foi confirmado.</p>
+            {orderNumber && (
+              <div className="bg-secondary rounded-xl p-4 my-5">
+                <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium">Número do Pedido</p>
+                <p className="font-display text-3xl font-bold text-foreground mt-1 tracking-wider">{orderNumber}</p>
               </div>
-
-              {pixQrBase64 && (
-                <div className="flex justify-center">
-                  <img
-                    src={`data:image/png;base64,${pixQrBase64}`}
-                    alt="QR Code PIX"
-                    className="w-48 h-48 rounded-lg border border-border"
-                  />
-                </div>
-              )}
-
-              {pixCode && (
-                <>
-                  <p className="text-xs text-muted-foreground">Ou copie o código PIX:</p>
-                  <div className="flex items-center gap-2 bg-card rounded-lg p-2.5 border border-border">
-                    <code className="flex-1 text-xs font-mono break-all text-foreground line-clamp-3">{pixCode}</code>
-                    <Button variant="outline" size="icon" className="h-8 w-8 flex-shrink-0 rounded-lg" onClick={copyPix}>
-                      <Copy className={`h-4 w-4 ${copied ? 'text-success' : ''}`} />
-                    </Button>
-                  </div>
-                </>
-              )}
-
-              {!pixCode && !pixQrBase64 && (
-                <p className="text-xs text-muted-foreground">Pagamento sendo processado pelo Mercado Pago...</p>
-              )}
-
-              <div className="p-3 bg-primary/8 rounded-lg border border-primary/15">
-                <p className="text-xs font-semibold text-foreground">⏳ Aprovação automática</p>
-                <p className="text-xs text-muted-foreground mt-0.5">
-                  Após o pagamento, seu pedido será aprovado automaticamente. Vá ao bar com o número <span className="font-bold text-foreground">#{orderNumber}</span> para retirar.
-                </p>
-              </div>
-            </div>
-
+            )}
             <div className="flex gap-2 mt-5">
               <Button variant="accent" className="flex-1" onClick={() => navigate("/meus-pedidos")}>
                 Ver Pedidos
@@ -143,6 +139,73 @@ export default function Checkout() {
     );
   }
 
+  if (status === "in_process") {
+    return (
+      <div className="min-h-screen bg-background">
+        <AppHeader />
+        <main className="container px-4 py-6 max-w-lg mx-auto">
+          <div className="bg-card rounded-2xl p-6 border border-border animate-scale-in text-center">
+            <div className="w-14 h-14 rounded-full bg-yellow-500/10 flex items-center justify-center mx-auto mb-4">
+              <Clock className="h-7 w-7 text-yellow-500" />
+            </div>
+            <h1 className="font-display text-2xl font-bold">Pagamento em Análise</h1>
+            <p className="text-muted-foreground mt-2">Seu pagamento está sendo processado. Você será notificado quando for aprovado.</p>
+            {orderNumber && (
+              <div className="bg-secondary rounded-xl p-4 my-5">
+                <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium">Número do Pedido</p>
+                <p className="font-display text-3xl font-bold text-foreground mt-1 tracking-wider">{orderNumber}</p>
+              </div>
+            )}
+            <div className="flex gap-2 mt-5">
+              <Button variant="accent" className="flex-1" onClick={() => navigate("/meus-pedidos")}>
+                Ver Pedidos
+              </Button>
+              <Button variant="outline" className="flex-1" onClick={() => navigate("/")}>
+                Cardápio
+              </Button>
+            </div>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  if (status === "rejected") {
+    return (
+      <div className="min-h-screen bg-background">
+        <AppHeader />
+        <main className="container px-4 py-6 max-w-lg mx-auto">
+          <div className="bg-card rounded-2xl p-6 border border-border animate-scale-in text-center">
+            <div className="w-14 h-14 rounded-full bg-destructive/10 flex items-center justify-center mx-auto mb-4">
+              <XCircle className="h-7 w-7 text-destructive" />
+            </div>
+            <h1 className="font-display text-2xl font-bold">Pagamento Recusado</h1>
+            <p className="text-muted-foreground mt-2">Tente novamente com outro método de pagamento.</p>
+            <div className="flex gap-2 mt-5">
+              <Button variant="accent" className="flex-1" onClick={() => setStatus("idle")}>
+                Tentar Novamente
+              </Button>
+              <Button variant="outline" className="flex-1" onClick={() => navigate("/carrinho")}>
+                Voltar ao Carrinho
+              </Button>
+            </div>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  if (!mpPublicKey) {
+    return (
+      <div className="min-h-screen bg-background">
+        <AppHeader />
+        <main className="container px-4 py-6 max-w-lg mx-auto text-center">
+          <p className="text-destructive font-semibold">Chave pública do Mercado Pago não configurada.</p>
+        </main>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-background">
       <AppHeader />
@@ -151,31 +214,41 @@ export default function Checkout() {
           <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => navigate("/carrinho")}>
             <ArrowLeft className="h-4 w-4" />
           </Button>
-          <h1 className="font-display text-xl font-bold">Checkout</h1>
+          <h1 className="font-display text-xl font-bold">Pagamento</h1>
         </div>
 
-        <div className="bg-card rounded-xl p-4 border border-border animate-fade-up">
+        {/* Order Summary */}
+        <div className="bg-card rounded-xl p-4 border border-border animate-fade-up mb-5">
           <h2 className="font-display font-semibold text-sm mb-3 text-muted-foreground uppercase tracking-wider">Resumo</h2>
-          {items.map(item => (
+          {items.map((item) => (
             <div key={item.id} className="flex justify-between py-2 border-b border-border last:border-0">
               <span className="text-sm">{item.quantity}x {item.title}</span>
-              <span className="text-sm font-semibold">R${(item.price * item.quantity).toFixed(2).replace('.', ',')}</span>
+              <span className="text-sm font-semibold">R${(item.price * item.quantity).toFixed(2).replace(".", ",")}</span>
             </div>
           ))}
           <div className="flex justify-between mt-3 pt-3 border-t border-border">
             <span className="font-display font-bold">Total</span>
-            <span className="font-display font-bold text-lg">R${total.toFixed(2).replace('.', ',')}</span>
+            <span className="font-display font-bold text-lg">R${total.toFixed(2).replace(".", ",")}</span>
           </div>
         </div>
 
-        <Button variant="accent" className="w-full mt-4 h-12 text-base font-semibold" onClick={handlePlaceOrder} disabled={loading || items.length === 0}>
-          {loading ? (
-            <span className="flex items-center gap-2">
-              <Loader2 className="h-4 w-4 animate-spin" />
-              Processando...
-            </span>
-          ) : "Confirmar e Pagar com PIX"}
-        </Button>
+        {/* Payment Brick */}
+        {status === "processing" ? (
+          <div className="flex flex-col items-center justify-center py-16">
+            <Loader2 className="h-8 w-8 animate-spin text-primary mb-3" />
+            <p className="font-display font-semibold">Processando pagamento...</p>
+          </div>
+        ) : (
+          <div className="animate-fade-up">
+            <Payment
+              initialization={initialization}
+              customization={customization}
+              onSubmit={onSubmit}
+              onReady={onReady}
+              onError={onError}
+            />
+          </div>
+        )}
       </main>
     </div>
   );

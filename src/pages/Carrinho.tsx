@@ -14,46 +14,14 @@ export default function Carrinho() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
 
-  async function handleCheckout() {
+  function handleCheckout() {
     if (!user) {
       toast.error("Faça login para finalizar o pedido");
       navigate("/login");
       return;
     }
     if (items.length === 0) return;
-
-    setLoading(true);
-    try {
-      const { data: sessionData } = await supabase.auth.getSession();
-      const token = sessionData?.session?.access_token;
-
-      const res = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-mp-preference`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-            apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-          },
-          body: JSON.stringify({
-            items: items.map(i => ({ id: i.id, title: i.title, price: i.price, quantity: i.quantity })),
-            total,
-            user_id: user.id,
-          }),
-        }
-      );
-
-      const result = await res.json();
-      if (!res.ok) throw new Error(result.error || "Erro ao criar pagamento");
-
-      clearCart();
-      // Redirect to Mercado Pago checkout
-      window.location.href = result.init_point;
-    } catch (err: any) {
-      toast.error(err.message || "Erro ao processar pagamento");
-      setLoading(false);
-    }
+    navigate("/checkout");
   }
 
   return (

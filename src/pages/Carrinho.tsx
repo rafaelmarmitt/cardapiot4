@@ -1,7 +1,9 @@
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Minus, Plus, Trash2, ArrowLeft } from "lucide-react";
+import { Minus, Plus, Trash2, ArrowLeft, Loader2 } from "lucide-react";
 import { useCart } from "@/contexts/CartContext";
 import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import AppHeader from "@/components/AppHeader";
 import { toast } from "sonner";

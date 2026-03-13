@@ -370,6 +370,52 @@ export default function Checkout() {
           </div>
         </div>
 
+        <div className="bg-card rounded-xl p-4 border border-border animate-fade-up mb-5 space-y-3">
+          <h2 className="font-display font-semibold text-sm text-muted-foreground uppercase tracking-wider">
+            Dados do pagador (PIX)
+          </h2>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div className="space-y-1.5 sm:col-span-2">
+              <Label htmlFor="payer-email">E-mail</Label>
+              <Input
+                id="payer-email"
+                type="email"
+                value={payerEmail}
+                onChange={(e) => setPayerEmail(e.target.value)}
+                placeholder="seu@email.com"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="payer-first-name">Nome</Label>
+              <Input
+                id="payer-first-name"
+                value={payerFirstName}
+                onChange={(e) => setPayerFirstName(e.target.value)}
+                placeholder="Nome"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="payer-last-name">Sobrenome</Label>
+              <Input
+                id="payer-last-name"
+                value={payerLastName}
+                onChange={(e) => setPayerLastName(e.target.value)}
+                placeholder="Sobrenome"
+              />
+            </div>
+            <div className="space-y-1.5 sm:col-span-2">
+              <Label htmlFor="payer-cpf">CPF</Label>
+              <Input
+                id="payer-cpf"
+                inputMode="numeric"
+                value={formattedCpf}
+                onChange={(e) => setPayerCpf(e.target.value.replace(/\D/g, "").slice(0, 11))}
+                placeholder="000.000.000-00"
+              />
+            </div>
+          </div>
+        </div>
+
         {status === "processing" ? (
           <div className="flex flex-col items-center justify-center py-16">
             <Loader2 className="h-8 w-8 animate-spin text-primary mb-3" />
@@ -381,7 +427,7 @@ export default function Checkout() {
               initialization={{
                 amount: total,
                 payer: {
-                  email: user?.email || "",
+                  email: payerEmail,
                 },
               }}
               customization={customization}

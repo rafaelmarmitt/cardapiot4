@@ -108,7 +108,37 @@ export default function Checkout() {
   const onSubmit = useCallback(
     async (formData: any) => {
       if (!user || items.length === 0) return;
+
+      const normalizedEmail = payerEmail.trim().toLowerCase();
+      const normalizedFirstName = payerFirstName.trim();
+      const normalizedLastName = payerLastName.trim();
+      const normalizedCpf = payerCpf.replace(/\D/g, "");
+
+      if (!normalizedEmail || !normalizedFirstName || !normalizedCpf) {
+        toast.error("Para PIX, preencha nome, e-mail e CPF do pagador.");
+        return;
+      }
+
+      if (normalizedCpf.length !== 11) {
+        toast.error("CPF inválido. Digite os 11 números do CPF.");
+        return;
+      }
+
       setStatus("processing");
+
+      const normalizedPaymentData = {
+        ...formData,
+        payer: {
+          ...(formData?.payer || {}),
+          email: normalizedEmail,
+          first_name: normalizedFirstName,
+          last_name: normalizedLastName || "Cliente",
+          identification: {
+            type: "CPF",
+            number: normalizedCpf,
+          },
+        },
+      };
 
       try {
         const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
@@ -123,7 +153,7 @@ export default function Checkout() {
               apikey: supabaseKey,
             },
             body: JSON.stringify({
-              paymentData: formData,
+              paymentData: normalizedPaymentData,
               items: items.map((i) => ({
                 id: i.id,
                 title: i.title,
@@ -174,7 +204,7 @@ export default function Checkout() {
         }
       }
     },
-    [user, items, total, clearCart]
+    [user, items, total, clearCart, payerEmail, payerFirstName, payerLastName, payerCpf]
   );
 
   const onError = useCallback((error: any) => {

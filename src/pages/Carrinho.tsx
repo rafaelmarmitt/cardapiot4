@@ -39,6 +39,7 @@ export default function Carrinho() {
           body: JSON.stringify({
             items: items.map(i => ({ id: i.id, title: i.title, price: i.price, quantity: i.quantity })),
             total,
+            user_id: user.id,
           }),
         }
       );

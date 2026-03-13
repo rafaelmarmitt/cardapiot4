@@ -5,6 +5,8 @@ import { initMercadoPago, Payment } from "@mercadopago/sdk-react";
 import { useCart } from "@/contexts/CartContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import AppHeader from "@/components/AppHeader";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -24,14 +26,40 @@ interface PixData {
 
 export default function Checkout() {
   const { items, total, clearCart } = useCart();
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const navigate = useNavigate();
   const [status, setStatus] = useState<PaymentStatus>("idle");
   const [orderNumber, setOrderNumber] = useState<string | null>(null);
   const [orderId, setOrderId] = useState<string | null>(null);
   const [pixData, setPixData] = useState<PixData | null>(null);
   const [copied, setCopied] = useState(false);
+  const [payerEmail, setPayerEmail] = useState("");
+  const [payerFirstName, setPayerFirstName] = useState("");
+  const [payerLastName, setPayerLastName] = useState("");
+  const [payerCpf, setPayerCpf] = useState("");
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  useEffect(() => {
+    if (!user) return;
+
+    setPayerEmail((prev) => prev || user.email || "");
+
+    if (!payerFirstName && !payerLastName) {
+      const fullName = (profile?.name || user.user_metadata?.name || "").trim();
+      if (fullName) {
+        const [first, ...rest] = fullName.split(/\s+/);
+        setPayerFirstName(first || "");
+        setPayerLastName(rest.join(" ") || "Cliente");
+      }
+    }
+  }, [user, profile, payerFirstName, payerLastName]);
+
+  const formattedCpf = payerCpf
+    .replace(/\D/g, "")
+    .slice(0, 11)
+    .replace(/(\d{3})(\d)/, "$1.$2")
+    .replace(/(\d{3})(\d)/, "$1.$2")
+    .replace(/(\d{3})(\d{1,2})$/, "$1-$2");
 
   // Poll order status for PIX
   useEffect(() => {
@@ -80,7 +108,46 @@ export default function Checkout() {
   const onSubmit = useCallback(
     async (formData: any) => {
       if (!user || items.length === 0) return;
+
+      const sourceFormData = formData?.formData || formData;
+      const isPixPayment = sourceFormData?.payment_method_id === "pix";
+
+      const normalizedEmail = payerEmail.trim().toLowerCase();
+      const normalizedFirstName = payerFirstName.trim();
+      const normalizedLastName = payerLastName.trim();
+      const normalizedCpf = payerCpf.replace(/\D/g, "");
+
+      if (isPixPayment && (!normalizedEmail || !normalizedFirstName || !normalizedCpf)) {
+        toast.error("Para PIX, preencha nome, e-mail e CPF do pagador.");
+        return;
+      }
+
+      if (isPixPayment && normalizedCpf.length !== 11) {
+        toast.error("CPF inválido. Digite os 11 números do CPF.");
+        return;
+      }
+
       setStatus("processing");
+
+      const enrichedFormData = {
+        ...sourceFormData,
+        payer: {
+          ...(sourceFormData?.payer || {}),
+          email: normalizedEmail,
+          first_name: normalizedFirstName,
+          last_name: normalizedLastName || "Cliente",
+          identification: isPixPayment
+            ? {
+                type: "CPF",
+                number: normalizedCpf,
+              }
+            : sourceFormData?.payer?.identification,
+        },
+      };
+
+      const normalizedPaymentData = formData?.formData
+        ? { ...formData, formData: enrichedFormData }
+        : enrichedFormData;
 
       try {
         const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
@@ -95,7 +162,7 @@ export default function Checkout() {
               apikey: supabaseKey,
             },
             body: JSON.stringify({
-              paymentData: formData,
+              paymentData: normalizedPaymentData,
               items: items.map((i) => ({
                 id: i.id,
                 title: i.title,
@@ -146,7 +213,7 @@ export default function Checkout() {
         }
       }
     },
-    [user, items, total, clearCart]
+    [user, items, total, clearCart, payerEmail, payerFirstName, payerLastName, payerCpf]
   );
 
   const onError = useCallback((error: any) => {
@@ -303,6 +370,52 @@ export default function Checkout() {
           </div>
         </div>
 
+        <div className="bg-card rounded-xl p-4 border border-border animate-fade-up mb-5 space-y-3">
+          <h2 className="font-display font-semibold text-sm text-muted-foreground uppercase tracking-wider">
+            Dados do pagador (PIX)
+          </h2>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div className="space-y-1.5 sm:col-span-2">
+              <Label htmlFor="payer-email">E-mail</Label>
+              <Input
+                id="payer-email"
+                type="email"
+                value={payerEmail}
+                onChange={(e) => setPayerEmail(e.target.value)}
+                placeholder="seu@email.com"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="payer-first-name">Nome</Label>
+              <Input
+                id="payer-first-name"
+                value={payerFirstName}
+                onChange={(e) => setPayerFirstName(e.target.value)}
+                placeholder="Nome"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="payer-last-name">Sobrenome</Label>
+              <Input
+                id="payer-last-name"
+                value={payerLastName}
+                onChange={(e) => setPayerLastName(e.target.value)}
+                placeholder="Sobrenome"
+              />
+            </div>
+            <div className="space-y-1.5 sm:col-span-2">
+              <Label htmlFor="payer-cpf">CPF</Label>
+              <Input
+                id="payer-cpf"
+                inputMode="numeric"
+                value={formattedCpf}
+                onChange={(e) => setPayerCpf(e.target.value.replace(/\D/g, "").slice(0, 11))}
+                placeholder="000.000.000-00"
+              />
+            </div>
+          </div>
+        </div>
+
         {status === "processing" ? (
           <div className="flex flex-col items-center justify-center py-16">
             <Loader2 className="h-8 w-8 animate-spin text-primary mb-3" />
@@ -314,7 +427,7 @@ export default function Checkout() {
               initialization={{
                 amount: total,
                 payer: {
-                  email: user?.email || "",
+                  email: payerEmail,
                 },
               }}
               customization={customization}

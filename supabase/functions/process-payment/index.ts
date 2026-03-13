@@ -49,12 +49,19 @@ Deno.serve(async (req) => {
     const payer: Record<string, unknown> = { ...formData.payer };
 
     if (isPix) {
-      if (!payer.email) {
+      const payerEmail = String(payer.email || "").trim().toLowerCase();
+      if (!payerEmail) {
         throw new Error("E-mail do pagador é obrigatório para pagamento via PIX.");
       }
-      if (!payer.first_name) {
-        payer.first_name = (payer.email as string).split("@")[0];
+
+      const payerFirstName = String(payer.first_name || "").trim();
+      if (!payerFirstName) {
+        throw new Error("Nome do pagador é obrigatório para pagamento via PIX.");
       }
+
+      payer.email = payerEmail;
+      payer.first_name = payerFirstName;
+
       if (!payer.last_name) {
         payer.last_name = "Cliente";
       }

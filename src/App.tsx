@@ -10,7 +10,7 @@ import Index from "./pages/Index";
 import Login from "./pages/Login";
 import Cadastro from "./pages/Cadastro";
 import Carrinho from "./pages/Carrinho";
-import Checkout from "./pages/Checkout";
+
 import MeusPedidos from "./pages/MeusPedidos";
 import Admin from "./pages/Admin";
 import NotFound from "./pages/NotFound";

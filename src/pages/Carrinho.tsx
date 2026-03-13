@@ -7,10 +7,9 @@ import AppHeader from "@/components/AppHeader";
 import { toast } from "sonner";
 
 export default function Carrinho() {
-  const { items, removeItem, updateQuantity, total, clearCart } = useCart();
+  const { items, removeItem, updateQuantity, total } = useCart();
   const { user } = useAuth();
   const navigate = useNavigate();
-  
 
   function handleCheckout() {
     if (!user) {
@@ -19,7 +18,8 @@ export default function Carrinho() {
       return;
     }
     if (items.length === 0) return;
-    navigate("/checkout");
+    // TODO: integrar pagamento
+    toast.info("Integração de pagamento pendente.");
   }
 
   return (

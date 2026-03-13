@@ -10,7 +10,7 @@ export default function Carrinho() {
   const { items, removeItem, updateQuantity, total, clearCart } = useCart();
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [loading, setLoading] = useState(false);
+  
 
   function handleCheckout() {
     if (!user) {

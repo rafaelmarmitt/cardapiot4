@@ -123,8 +123,14 @@ export default function Checkout() {
           toast.error(result.status_detail || "Pagamento recusado. Tente outro método.");
         }
       } catch (err: any) {
+        console.error("Payment error:", err);
         setStatus("rejected");
-        toast.error(err.message || "Erro ao processar pagamento");
+        const msg = err.message || "Erro ao processar pagamento";
+        if (msg.includes("CPF") || msg.includes("documento") || msg.includes("email")) {
+          toast.error("Dados incompletos: verifique se o CPF e e-mail foram preenchidos no formulário.");
+        } else {
+          toast.error(msg);
+        }
       }
     },
     [user, items, total, clearCart]
@@ -144,8 +150,8 @@ export default function Checkout() {
         <AppHeader />
         <main className="container px-4 py-6 max-w-lg mx-auto">
           <div className="bg-card rounded-2xl p-6 border border-border animate-scale-in text-center">
-            <div className="w-14 h-14 rounded-full bg-green-500/10 flex items-center justify-center mx-auto mb-4">
-              <CheckCircle className="h-7 w-7 text-green-500" />
+            <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
+              <CheckCircle className="h-7 w-7 text-primary" />
             </div>
             <h1 className="font-display text-2xl font-bold">Pagamento Aprovado!</h1>
             <p className="text-muted-foreground mt-2">Seu pedido foi confirmado.</p>

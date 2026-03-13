@@ -23,11 +23,9 @@ Deno.serve(async (req) => {
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Generate order number
     const { data: orderNumData } = await supabase.rpc("generate_order_number");
     const orderNumber = orderNumData || `${Date.now()}`;
 
-    // Insert order as pending
     const { data: orderData, error: dbError } = await supabase
       .from("orders")
       .insert({
@@ -44,13 +42,30 @@ Deno.serve(async (req) => {
 
     // The Payment Brick sends data nested under formData
     const formData = paymentData.formData || paymentData;
-    const paymentType = paymentData.paymentType || "";
+    const paymentMethodId = formData.payment_method_id;
+    const isPix = paymentMethodId === "pix";
+
+    // Build payer object - ensure required fields for PIX
+    const payer: Record<string, unknown> = { ...formData.payer };
+
+    if (isPix) {
+      // PIX requires email, first_name, and identification
+      if (!payer.email) {
+        throw new Error("E-mail do pagador é obrigatório para pagamento via PIX.");
+      }
+      if (!payer.first_name) {
+        payer.first_name = (payer.email as string).split("@")[0];
+      }
+      if (!payer.identification || !(payer.identification as Record<string, unknown>).number) {
+        throw new Error("CPF do pagador é obrigatório para pagamento via PIX. Preencha o campo de documento no formulário.");
+      }
+    }
 
     // Build MP payment payload
     const mpPayload: Record<string, unknown> = {
       transaction_amount: Number(total),
-      payment_method_id: formData.payment_method_id,
-      payer: formData.payer || {},
+      payment_method_id: paymentMethodId,
+      payer,
       external_reference: orderData.id,
     };
 
@@ -61,7 +76,8 @@ Deno.serve(async (req) => {
       mpPayload.issuer_id = formData.issuer_id;
     }
 
-    // Call Mercado Pago Payments API
+    console.log("MP Payload:", JSON.stringify(mpPayload));
+
     const idempotencyKey = crypto.randomUUID();
 
     const mpRes = await fetch("https://api.mercadopago.com/v1/payments", {
@@ -75,6 +91,7 @@ Deno.serve(async (req) => {
     });
 
     const mpData = await mpRes.json();
+    console.log("MP Response status:", mpRes.status, "body:", JSON.stringify(mpData));
 
     if (!mpRes.ok) {
       await supabase
@@ -100,12 +117,13 @@ Deno.serve(async (req) => {
       .update({ status: newStatus })
       .eq("id", orderData.id);
 
-    // Build response with PIX data if applicable
+    // Build response
     const response: Record<string, unknown> = {
       status: mpData.status,
       status_detail: mpData.status_detail,
       order_number: orderNumber,
       order_id: orderData.id,
+      payment_method_id: paymentMethodId,
     };
 
     // Include PIX QR code data if available
@@ -120,6 +138,7 @@ Deno.serve(async (req) => {
       status: 200,
     });
   } catch (error) {
+    console.error("process-payment error:", (error as Error).message);
     return new Response(
       JSON.stringify({ error: (error as Error).message }),
       {
